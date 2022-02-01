@@ -1,4 +1,3 @@
-
 #include "iotbundle.h"
 
 Iotbundle::Iotbundle(String server, String project)
@@ -24,79 +23,25 @@ Iotbundle::Iotbundle(String server, String project)
   this->_esp_id = String(ESP.getChipId());
 }
 
-void Iotbundle::init(String email, String pass)
+void Iotbundle::begin(String email, String pass)
 {
 
   this->_email = email;
   this->_pass = pass;
 
-  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
-  client->setInsecure();
-  HTTPClient https;
-
-  const char *headerNames[] = {"Location"};
-  https.collectHeaders(headerNames, sizeof(headerNames) / sizeof(headerNames[0]));
-
-  DEBUG("[HTTPS] begin...\n");
   String url = this->_server + "api/connect.php";
   url += "?email=" + this->_email;
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
   url += "&project_id=" + this->_project_id;
+  // DEBUGLN(url);
 
-  DEBUGLN(url);
+  String payload = getDataSSL(url);
 
-  while (!(url == ""))
+  if (payload.toInt() > 0)
   {
-
-    if (https.begin(*client, url))
-    { // HTTP
-      url = "";
-      DEBUG("[HTTPS] GET...\n");
-      // start connection and send HTTP header
-      int httpCode = https.GET();
-
-      // httpCode will be negative on error
-      if (httpCode > 0)
-      {
-        // HTTP header has been send and Server response header has been handled
-        DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
-
-        // file found at server
-        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
-        {
-          String payload = https.getString();
-          DEBUGLN(payload);
-          if (payload.toInt() > 0)
-          {
-            _user_id = payload.toInt();
-            DEBUGLN("get user_id : " + String(_user_id));
-          }
-          serverConnected = true;
-        }
-        else
-        {
-          serverConnected = false;
-        }
-        if (https.hasHeader("Location"))
-        { // if has redirect code
-          url = https.header("Location");
-          DEBUGLN(url);
-        }
-      }
-      else
-      {
-        DEBUGLN("[HTTPS] GET... failed, error: " + https.errorToString(httpCode));
-        serverConnected = false;
-      }
-
-      https.end();
-    }
-    else
-    {
-      DEBUGLN("[HTTPS} Unable to connect");
-      serverConnected = false;
-    }
+    _user_id = payload.toInt();
+    DEBUGLN("get user_id : " + String(_user_id));
   }
 }
 
@@ -108,31 +53,14 @@ void Iotbundle::handle()
     _previousMillis = currentMillis;
     if (_user_id > 0)
     {
-      if (_project_id == 1)
+      if (var_index)
       {
-        Acmeter meter(_server, _user_id, _project_id, _esp_id);
-        if (var_index)
+        if (_project_id == 1)
         {
-        //   DEBUGLN("sending data to server");
-          // bool senddata = 
-          meter.update(var_sum[0] / var_index,
-                                         var_sum[1] / var_index,
-                                         var_sum[2] / var_index,
-                                         var_sum[3] / var_index,
-                                         var_sum[4] / var_index,
-                                         var_sum[5] / var_index);
-        //   if (senddata)
-        //   {
-        //     clearvar();
-        //   }
-        //   else
-        //   {
-        //     DEBUGLN("send fail");
-        //   }
-        // }
-        // else
-        // {
-        //   DEBUGLN("no data to send");
+
+            DEBUGLN("sending data to server");
+            acMeter();
+
         }
       }
     }
@@ -144,7 +72,7 @@ void Iotbundle::handle()
         _get_userid = 0;
 
         DEBUGLN("retry login");
-        init(this->_email, this->_pass);
+        begin(this->_email, this->_pass);
       }
     }
   }
@@ -179,4 +107,100 @@ void Iotbundle::clearvar()
     var_sum[i] = 0;
   }
   var_index = 0;
+}
+
+String Iotbundle::getDataSSL(String url)
+{
+  String payload;
+
+  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+  HTTPClient https;
+
+  const char *headerNames[] = {"Location"};
+  https.collectHeaders(headerNames, sizeof(headerNames) / sizeof(headerNames[0]));
+
+  DEBUG("[HTTPS] begin...\n");
+
+  DEBUGLN(url);
+
+  while (!(url == ""))
+  {
+
+    if (https.begin(*client, url))
+    { // HTTP
+      url = "";
+      DEBUG("[HTTPS] GET...\n");
+      // start connection and send HTTP header
+      int httpCode = https.GET();
+
+      // httpCode will be negative on error
+      if (httpCode > 0)
+      {
+        // HTTP header has been send and Server response header has been handled
+        DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
+
+        // file found at server
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
+        {
+          payload = https.getString();
+          DEBUGLN(payload);
+
+          serverConnected = true;
+        }
+        else
+        {
+          serverConnected = false;
+        }
+        if (https.hasHeader("Location"))
+        { // if has redirect code
+          url = https.header("Location");
+          DEBUGLN(url);
+        }
+      }
+      else
+      {
+        DEBUGLN("[HTTPS] GET... failed, error: " + https.errorToString(httpCode));
+        serverConnected = false;
+      }
+
+      https.end();
+    }
+    else
+    {
+      DEBUGLN("[HTTPS} Unable to connect");
+      serverConnected = false;
+    }
+  }
+
+  return payload;
+}
+
+bool Iotbundle::status(){
+  return serverConnected;
+}
+
+void Iotbundle::acMeter()
+{
+  String url = this->_server + "api/";
+  url += String(_project_id);
+  url += "/update.php";
+  url += "?user_id=" + String(_user_id);
+  url += "&esp_id=" + _esp_id;
+  if (var_sum[0])
+    url += "&voltage=" + String(var_sum[0] / var_index, 1);
+  if (var_sum[1])
+    url += "&current=" + String(var_sum[1] / var_index, 3);
+  if (var_sum[2])
+    url += "&power=" + String(var_sum[2] / var_index, 1);
+  if (var_sum[3])
+    url += "&energy=" + String(var_sum[3] / var_index, 3);
+  if (var_sum[4])
+    url += "&frequency=" + String(var_sum[4] / var_index, 1);
+  if (var_sum[5])
+    url += "&pf=" + String(var_sum[5] / var_index, 2);
+
+  String payload = getDataSSL(url);
+  if (serverConnected)
+    clearvar();
 }

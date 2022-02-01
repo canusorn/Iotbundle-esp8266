@@ -3,15 +3,15 @@
 #ifndef iotbundle_h
 #define iotbundle_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
-#include "project/acmeter.h"
 
 #define IOTBUNDLE_DEBUG
-#define retryget_userid 60
+#define retryget_userid 30
+
 // for select server
 //#ifdef IOTKID
 //
@@ -41,6 +41,8 @@ private:
   uint8_t _get_userid;
 
   void clearvar();
+  String getDataSSL(String url);
+  void acMeter();
 
 public:
   Iotbundle(String server, String project);
@@ -50,12 +52,18 @@ public:
   float var_sum[10];    // store sum variables
   uint8_t var_index;
 
+
   //connect and login
-  void init(String email, String pass);
+  void begin(String email, String pass);
 
   // send data to server
   void handle();
+
+  // sumdata to cal average
   void update(float var1 = NAN, float var2 = NAN, float var3 = NAN, float var4 = NAN, float var5 = NAN, float var6 = NAN, float var7 = NAN, float var8 = NAN, float var9 = NAN, float var10 = NAN);
+
+  // get status
+  bool status();
 };
 
 // for set debug mode
