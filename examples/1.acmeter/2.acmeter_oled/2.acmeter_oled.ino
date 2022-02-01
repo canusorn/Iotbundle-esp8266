@@ -14,8 +14,8 @@
 #include <ESP8266mDNS.h>
 #include <iotbundle.h>
 
-// 1 สร้าง object
-Iotbundle iot("IOTKID", "ACMETER");
+// 1 สร้าง object ชื่อ iot และกำหนดค่า(server,project)
+Iotbundle iot("IOTKID", "AC_METER");
 
 #define PIN_RESET -1
 #define DC_JUMPER 0

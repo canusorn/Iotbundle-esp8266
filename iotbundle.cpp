@@ -11,9 +11,7 @@ Iotbundle::Iotbundle(String server, String project)
 
   //set project id
   if (project == "AC_METER")
-  {
     this->_project_id = 1;
-  }
   else if (project == "PM_METER")
     this->_project_id = 2;
   else if (project == "DC_METER")
