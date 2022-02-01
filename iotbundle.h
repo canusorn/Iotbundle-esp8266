@@ -39,6 +39,9 @@ private:
   uint16_t _user_id;
   uint32_t _previousMillis;
   uint8_t _get_userid;
+  bool newio_s = true, newio_c = false; //flag new io from server,clients has change
+  uint16_t io;  // current io output
+  uint16_t AllowIO = 0b111100001; // pin4,3=pzem  2,1=i2c
 
   void clearvar();
   String getDataSSL(String url);
@@ -51,7 +54,6 @@ public:
   uint8_t sendtime = 2; // delay time to send in second
   float var_sum[10];    // store sum variables
   uint8_t var_index;
-
 
   //connect and login
   void begin(String email, String pass);

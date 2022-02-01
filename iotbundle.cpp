@@ -31,7 +31,7 @@ void Iotbundle::begin(String email, String pass)
   url += "?email=" + this->_email;
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
-  url += "&project_id=" + this->_project_id;
+  url += "&project_id=" + String(this->_project_id);
   // DEBUGLN(url);
 
   String payload = getDataSSL(url);
