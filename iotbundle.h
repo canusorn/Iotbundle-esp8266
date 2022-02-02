@@ -7,6 +7,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
+#include <ArduinoJson.h>
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
