@@ -10,9 +10,11 @@ Iotbundle::Iotbundle(String server, String project)
     this->_server = "https://iotkiddie.com/";
 
   //set project id
-  if (project == "AC_METER"){
+  if (project == "AC_METER")
+  {
     this->_project_id = 1;
-    AllowIO = 0b111100001;} // pin4,3=pzem  2,1=i2c
+    AllowIO = 0b111100001;
+  } // pin4,3=pzem  2,1=i2c
   else if (project == "PM_METER")
     this->_project_id = 2;
   else if (project == "DC_METER")
@@ -57,9 +59,8 @@ void Iotbundle::handle()
         if (_project_id == 1)
         {
 
-            DEBUGLN("sending data to server");
-            acMeter();
-
+          DEBUGLN("sending data to server");
+          acMeter();
         }
       }
     }
@@ -175,21 +176,27 @@ String Iotbundle::getDataSSL(String url)
   return payload;
 }
 
-bool Iotbundle::status(){
+bool Iotbundle::status()
+{
   return serverConnected;
 }
 
-void Iotbundle::iohandle_s() {  //handle io from server
+void Iotbundle::iohandle_s()
+{ //handle io from server
   DEBUGLN("io:" + String(io, BIN));
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};  // GPIO from d0 d1 d2 ... d8
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint16_t useio = io & AllowIO;
-  for (int i = 0; i < 9; i++) {
-    if (bitRead(useio, i)) {  // use only allow pin
-      if (bitRead(io, i)) {
+  for (int i = 0; i < 9; i++)
+  {
+    if (bitRead(useio, i))
+    { // use only allow pin
+      if (bitRead(io, i))
+      {
         pinMode(wemosGPIO[i], OUTPUT);
         digitalWrite(wemosGPIO[i], HIGH);
       }
-      else {
+      else
+      {
         pinMode(wemosGPIO[i], OUTPUT);
         digitalWrite(wemosGPIO[i], LOW);
       }
@@ -216,8 +223,64 @@ void Iotbundle::acMeter()
     url += "&frequency=" + String(var_sum[4] / var_index, 1);
   if (var_sum[5])
     url += "&pf=" + String(var_sum[5] / var_index, 2);
+  if (newio_c)
+    url += "&io_c=" + String(io);
+  else if (newio_s)
+    url += "&io_s=" + String(io);
 
   String payload = getDataSSL(url);
+
+  if (payload != "")
+  {
+    int16_t newio = Stringparse(payload);
+    if (newio == 32767) // io from server updated
+    {
+      newio_s = false;
+    }
+    else if (newio == 32766) // io from client updated
+    {
+      newio_s = false;
+      newio_c = false;
+    }
+    else if (newio > 0)
+    {
+      io = newio;
+      iohandle_s();
+      newio_s = true;
+    }
+  }
+
   if (serverConnected)
     clearvar();
+}
+
+int16_t Iotbundle::Stringparse(String payload)
+{
+  int str_len = payload.length() + 1;
+  char buff[str_len];
+  payload.toCharArray(buff, str_len);
+
+  int j = 0;
+  String user_id_r_str, io_s_str;
+
+  for (int i = 0; i < str_len; i++)
+  {
+    if (j == 0)
+      user_id_r_str += buff[i];
+    else if (j == 1)
+      io_s_str += buff[i];
+
+    if (buff[i] == '&')
+      j++;
+  }
+
+  if (user_id_r_str.toInt() == _user_id) // check correct data
+    return io_s_str.toInt();
+  else if (user_id_r_str.toInt() == 0)
+  {
+    DEBUGLN("!error:" + io_s_str);
+    return -1;
+  }
+  else
+    return user_id_r_str.toInt();
 }

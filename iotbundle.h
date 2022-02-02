@@ -7,7 +7,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
-#include <ArduinoJson.h>
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
@@ -41,7 +40,7 @@ private:
   void iohandle_s();
 
   // parse json from payload
-  void jsonParse(String input);
+  int16_t Stringparse(String payload);
 
   // handle data acmeter'project
   void acMeter();

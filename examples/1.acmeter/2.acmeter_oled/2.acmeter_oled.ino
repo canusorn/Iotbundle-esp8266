@@ -22,7 +22,7 @@ Iotbundle iot("IOTKID", "AC_METER");
 
 const char *ssid = "G6PD_2.4G";
 const char *password = "570610193";
-const char *host = "powermeter";
+const char *host = "powermeter-test";
 
 String email = "anusorn1998@gmail.com";
 String pass = "vo6liIN";
