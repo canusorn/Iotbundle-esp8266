@@ -4,28 +4,12 @@
 #define iotbundle_h
 
 #include <Arduino.h>
-
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-
-// for select server
-//#ifdef IOTKID
-//
-//#elif defined(IOTKIDDIE)
-//
-//#else
-//#define IOTKID
-//#endif
-
-// #ifdef PROJECT
-// #if PROJECT=="AC_METER"
-// #include "project/acmeter.h"
-// #endif
-// #endif
 
 class Iotbundle
 {
@@ -37,25 +21,37 @@ private:
   String _pass;
   String _esp_id;
   uint16_t _user_id;
+  float var_sum[10]; // store sum variables
+  uint8_t var_index; // number of store file
   uint32_t _previousMillis;
-  uint8_t _get_userid;
+  uint8_t sendtime = 2;                 // delay time to send in second
+  uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = true, newio_c = false; //flag new io from server,clients has change
-  uint16_t io;  // current io output
-  uint16_t AllowIO = 0b111100001; // pin4,3=pzem  2,1=i2c
+  uint16_t io;                          // current io output
+  uint16_t AllowIO;                     // pin to allow to write
 
+  //clear sum variables
   void clearvar();
+
+  // get method with ssl
   String getDataSSL(String url);
+
+  // handle io from server
+  void iohandle_s();
+
+  // parse json from payload
+  void jsonParse(String input);
+
+  // handle data acmeter'project
   void acMeter();
 
 public:
   Iotbundle(String server, String project);
 
+  // flag connect to server
   bool serverConnected;
-  uint8_t sendtime = 2; // delay time to send in second
-  float var_sum[10];    // store sum variables
-  uint8_t var_index;
 
-  //connect and login
+  // connect and login
   void begin(String email, String pass);
 
   // send data to server

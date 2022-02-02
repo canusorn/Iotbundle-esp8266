@@ -10,8 +10,9 @@ Iotbundle::Iotbundle(String server, String project)
     this->_server = "https://iotkiddie.com/";
 
   //set project id
-  if (project == "AC_METER")
+  if (project == "AC_METER"){
     this->_project_id = 1;
+    AllowIO = 0b111100001;} // pin4,3=pzem  2,1=i2c
   else if (project == "PM_METER")
     this->_project_id = 2;
   else if (project == "DC_METER")
@@ -176,6 +177,24 @@ String Iotbundle::getDataSSL(String url)
 
 bool Iotbundle::status(){
   return serverConnected;
+}
+
+void Iotbundle::iohandle_s() {  //handle io from server
+  DEBUGLN("io:" + String(io, BIN));
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};  // GPIO from d0 d1 d2 ... d8
+  uint16_t useio = io & AllowIO;
+  for (int i = 0; i < 9; i++) {
+    if (bitRead(useio, i)) {  // use only allow pin
+      if (bitRead(io, i)) {
+        pinMode(wemosGPIO[i], OUTPUT);
+        digitalWrite(wemosGPIO[i], HIGH);
+      }
+      else {
+        pinMode(wemosGPIO[i], OUTPUT);
+        digitalWrite(wemosGPIO[i], LOW);
+      }
+    }
+  }
 }
 
 void Iotbundle::acMeter()
