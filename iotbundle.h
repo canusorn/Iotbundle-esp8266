@@ -1,4 +1,6 @@
-
+  // bit command
+  // 10bit 0b1111111111  = pin A0,8,7,6,5,4,3,2,1,0  (pin 1,2 is i2c)   in/out = 1,readA0/0
+  // 9bit 0b111111111 = pin 8,7,6,5,4,3,2,1,0    HIGH/LOW = 1/0
 
 #ifndef iotbundle_h
 #define iotbundle_h
