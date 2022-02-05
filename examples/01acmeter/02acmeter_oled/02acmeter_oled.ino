@@ -143,20 +143,35 @@ void loop()
     previousMillis = currentMillis;
     displayValue(); //update OLED
 
-    // 4 เมื่อได้ค่าใหม่ ให้อัพเดท ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
+    /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+    ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
+    ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN  
+    เช่น ต้องการส่งแค่ voltage current power
+    iot.update(voltage, current, power, NAN, NAN, NAN);    */
     iot.update(voltage, current, power, energy, frequency, pf);
   }
 }
 
 void displayValue()
 {
-  //------read data------
-  voltage = pzem.voltage();
-  current = pzem.current();
-  power = pzem.power();
-  energy = pzem.energy();
-  frequency = pzem.frequency();
-  pf = pzem.pf();
+    //------read data------
+    voltage = pzem.voltage();
+    if (!isnan(voltage))
+    { // ถ้าอ่านค่าได้
+      current = pzem.current();
+      power = pzem.power();
+      energy = pzem.energy();
+      frequency = pzem.frequency();
+      pf = pzem.pf();
+    }
+    else
+    { // ถ้าอ่านค่าไม่ได้ให้ใส่ค่า NAN(not a number)
+      current = NAN;
+      power = NAN;
+      energy = NAN;
+      frequency = NAN;
+      pf = NAN;
+    }
 
   //------Update OLED display------
   oled.clear(PAGE);

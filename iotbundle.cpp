@@ -211,17 +211,17 @@ void Iotbundle::acMeter()
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
-  if (var_sum[0])
+  if (!isnan(var_sum[0]))
     url += "&voltage=" + String(var_sum[0] / var_index, 1);
-  if (var_sum[1])
+  if (!isnan(var_sum[1]))
     url += "&current=" + String(var_sum[1] / var_index, 3);
-  if (var_sum[2])
+  if (!isnan(var_sum[2]))
     url += "&power=" + String(var_sum[2] / var_index, 1);
-  if (var_sum[3])
+  if (!isnan(var_sum[3]))
     url += "&energy=" + String(var_sum[3] / var_index, 3);
-  if (var_sum[4])
+  if (!isnan(var_sum[4]))
     url += "&frequency=" + String(var_sum[4] / var_index, 1);
-  if (var_sum[5])
+  if (!isnan(var_sum[5]))
     url += "&pf=" + String(var_sum[5] / var_index, 2);
   if (newio_c)
     url += "&io_c=" + String(io);
