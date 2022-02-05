@@ -3,13 +3,13 @@
 Iotbundle::Iotbundle(String server, String project)
 {
 
-  //set server
+  // set server
   if (server == "IOTKID")
     this->_server = "https://iotkid.space/";
   else if (server == "IOTKIDDIE")
     this->_server = "https://iotkiddie.com/";
 
-  //set project id
+  // set project id
   if (project == "AC_METER")
   {
     this->_project_id = 1;
@@ -20,7 +20,7 @@ Iotbundle::Iotbundle(String server, String project)
   else if (project == "DC_METER")
     this->_project_id = 3;
 
-  //get this esp id
+  // get this esp id
   this->_esp_id = String(ESP.getChipId());
 }
 
@@ -52,27 +52,29 @@ void Iotbundle::handle()
   if (currentMillis - _previousMillis >= sendtime * 1000)
   {
     _previousMillis = currentMillis;
-    if (_user_id > 0)
+    if (this->_email)
     {
-      if (var_index)
+      if (_user_id > 0)
       {
-        if (_project_id == 1)
+        if (var_index)
         {
-
-          DEBUGLN("sending data to server");
-          acMeter();
+          if (_project_id == 1)
+          {
+            DEBUGLN("sending data to server");
+            acMeter();
+          }
         }
       }
-    }
-    else
-    {
-      _get_userid++;
-      if (_get_userid >= retryget_userid)
+      else
       {
-        _get_userid = 0;
+        _get_userid++;
+        if (_get_userid >= retryget_userid)
+        {
+          _get_userid = 0;
 
-        DEBUGLN("retry login");
-        begin(this->_email, this->_pass);
+          DEBUGLN("retry login");
+          begin(this->_email, this->_pass);
+        }
       }
     }
   }
@@ -182,7 +184,7 @@ bool Iotbundle::status()
 }
 
 void Iotbundle::iohandle_s()
-{ //handle io from server
+{ // handle io from server
   DEBUGLN("io:" + String(io, BIN));
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint16_t useio = io & AllowIO;
