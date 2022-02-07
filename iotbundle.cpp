@@ -6,10 +6,13 @@ Iotbundle::Iotbundle(String project)
   if (project == "AC_METER")
   {
     this->_project_id = 1;
-    AllowIO = 0b111100001;
+    _AllowIO = 0b111100001;
   } // pin4,3=pzem  2,1=i2c
   else if (project == "PM_METER")
+  {
     this->_project_id = 2;
+    _AllowIO = 0b111100001;
+  }
   else if (project == "DC_METER")
     this->_project_id = 3;
 
@@ -62,6 +65,7 @@ void Iotbundle::handle()
           if (_project_id == 1)
           {
             DEBUGLN("sending data to server");
+            readio();
             acMeter();
           }
         }
@@ -188,7 +192,7 @@ void Iotbundle::iohandle_s()
 { // handle io from server
   DEBUGLN("io:" + String(io, BIN));
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  uint16_t useio = io & AllowIO;
+  uint16_t useio = io & _AllowIO;
   for (int i = 0; i < 9; i++)
   {
     if (bitRead(useio, i))
@@ -204,6 +208,26 @@ void Iotbundle::iohandle_s()
         digitalWrite(wemosGPIO[i], LOW);
       }
     }
+  }
+}
+
+void Iotbundle::readio()
+{
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  uint16_t useio = io & _AllowIO;
+  uint16_t currentio;
+  for (int i = 0; i < 9; i++)
+  {
+    if (bitRead(useio, i))
+    { // use only allow pin
+      bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
+    }
+  }
+  if (io != currentio)
+  {
+    DEBUGLN("newio:" + String(currentio, BIN));
+    newio_s = true;
+    io = currentio;
   }
 }
 

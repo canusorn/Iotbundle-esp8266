@@ -10,7 +10,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
-#define IOTBUNDLE_DEBUG
+// #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 
 class Iotbundle
@@ -30,7 +30,7 @@ private:
   uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = true, newio_c = false; //flag new io from server,clients has change
   uint16_t io;                          // current io output
-  uint16_t AllowIO;                     // pin to allow to write
+  uint16_t _AllowIO;                     // pin to allow to write
 
   //clear sum variables
   void clearvar();
@@ -46,6 +46,9 @@ private:
 
   // handle data acmeter'project
   void acMeter();
+
+  // read io and update to server
+  void readio();
 
 public:
   Iotbundle( String project);

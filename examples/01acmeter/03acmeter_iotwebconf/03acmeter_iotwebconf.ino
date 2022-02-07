@@ -42,7 +42,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.002"
+#define CONFIG_VERSION "0.001"
 #define CONFIG_PIN D5
 //#define IOTWEBCONF_CONFIG_USE_MDNS 80
 //#define STATUS_PIN LED_BUILTIN
