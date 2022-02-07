@@ -1,14 +1,7 @@
 #include "iotbundle.h"
 
-Iotbundle::Iotbundle(String server, String project)
+Iotbundle::Iotbundle(String project)
 {
-
-  // set server
-  if (server == "IOTKID")
-    this->_server = "https://iotkid.space/";
-  else if (server == "IOTKIDDIE")
-    this->_server = "https://iotkiddie.com/";
-
   // set project id
   if (project == "AC_METER")
   {
@@ -24,18 +17,24 @@ Iotbundle::Iotbundle(String server, String project)
   this->_esp_id = String(ESP.getChipId());
 }
 
-void Iotbundle::begin(String email, String pass)
+void Iotbundle::begin(String email, String pass, String server)
 {
 
+  // set server
+  this->_server = server;
+  if (this->_server == "")
+    this->_server = "https://iotkiddie.com";
   this->_email = email;
   this->_pass = pass;
 
-  String url = this->_server + "api/connect.php";
+  DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
+
+  String url = this->_server + "/api/connect.php";
   url += "?email=" + this->_email;
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
   url += "&project_id=" + String(this->_project_id);
-  // DEBUGLN(url);
+  DEBUGLN(url);
 
   String payload = getDataSSL(url);
 
@@ -44,6 +43,8 @@ void Iotbundle::begin(String email, String pass)
     _user_id = payload.toInt();
     DEBUGLN("get user_id : " + String(_user_id));
   }
+  else
+    DEBUGLN("can't login");
 }
 
 void Iotbundle::handle()
@@ -52,7 +53,7 @@ void Iotbundle::handle()
   if (currentMillis - _previousMillis >= sendtime * 1000)
   {
     _previousMillis = currentMillis;
-    if (this->_email)
+    if (this->_email && this->_server != "")
     {
       if (_user_id > 0)
       {
@@ -73,7 +74,7 @@ void Iotbundle::handle()
           _get_userid = 0;
 
           DEBUGLN("retry login");
-          begin(this->_email, this->_pass);
+          begin(this->_server, this->_email, this->_pass);
         }
       }
     }
@@ -208,7 +209,7 @@ void Iotbundle::iohandle_s()
 
 void Iotbundle::acMeter()
 {
-  String url = this->_server + "api/";
+  String url = this->_server + "/api/";
   url += String(_project_id);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
@@ -244,7 +245,7 @@ void Iotbundle::acMeter()
       newio_s = false;
       newio_c = false;
     }
-    else if (newio > 0)
+    else if (newio >= 0)
     {
       io = newio;
       iohandle_s();

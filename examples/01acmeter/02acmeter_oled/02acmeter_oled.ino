@@ -15,7 +15,9 @@
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(server,project)
-Iotbundle iot("IOTKID", "AC_METER");
+#define PROJECT "AC_METER"
+#define SERVER "https://iotkiddie.com"
+Iotbundle iot(PROJECT);
 
 #define PIN_RESET -1
 #define DC_JUMPER 0
@@ -27,15 +29,14 @@ const char *host = "powermeter-test";
 String email = "anusorn1998@gmail.com";
 String pass = "vo6liIN";
 
-MicroOLED oled(PIN_RESET, DC_JUMPER); //Example I2C declaration, uncomment if using I2C
-PZEM004Tv30 pzem(D3, D4);             //rx,tx pin
+MicroOLED oled(PIN_RESET, DC_JUMPER); // Example I2C declaration, uncomment if using I2C
+PZEM004Tv30 pzem(D3, D4);             // rx,tx pin
 
 unsigned long previousMillis = 0;
 float voltage, current, power, energy, frequency, pf;
 
 uint8_t logo_bmp[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xE0, 0xC0, 0xF0, 0xE0, 0x78, 0x38, 0x78, 0x3C, 0x1C, 0x3C, 0x1C, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1C, 0x3C, 0x1C, 0x3C, 0x78, 0x38, 0xF0, 0xE0, 0xF0, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x01, 0x00, 0x00, 0xF0, 0xF8, 0x70, 0x3C, 0x3C, 0x1C, 0x1E, 0x1E, 0x0E, 0x0E, 0x0E, 0x0F, 0x0F, 0x0E, 0x0E, 0x1E, 0x1E, 0x1E, 0x3C, 0x1C, 0x7C, 0x70, 0xF0, 0x70, 0x20, 0x01, 0x01, 0x03, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x1C, 0x3E, 0x1E, 0x0F, 0x0F, 0x07, 0x87, 0x87, 0x07, 0x0F, 0x0F, 0x1E, 0x3E, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x1F, 0x1F, 0x3F, 0x3F, 0x1F, 0x1F, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
 
 ESP8266WebServer server(80);
 String serverIndex = "<form method='POST' action='/update' enctype='multipart/form-data'><input type='file' name='update'><input type='submit' value='Update'></form><p>ESP ID : " + String(ESP.getChipId()) + "</p>";
@@ -49,7 +50,7 @@ void setup()
   oled.begin();
   oled.clear(PAGE);
   oled.clear(ALL);
-  oled.drawBitmap(logo_bmp); //call the drawBitmap function and pass it the array from above
+  oled.drawBitmap(logo_bmp); // call the drawBitmap function and pass it the array from above
   oled.setFontType(0);
   oled.setCursor(0, 36);
   oled.print(" IoTbundle");
@@ -69,15 +70,13 @@ void setup()
     server.on("/", HTTP_GET, []()
               {
                 server.sendHeader("Connection", "close");
-                server.send(200, "text/html", serverIndex);
-              });
+                server.send(200, "text/html", serverIndex); });
     server.on(
         "/update", HTTP_POST, []()
         {
           server.sendHeader("Connection", "close");
           server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-          ESP.restart();
-        },
+          ESP.restart(); },
         []()
         {
           HTTPUpload &upload = server.upload();
@@ -88,7 +87,7 @@ void setup()
             Serial.printf("Update: %s\n", upload.filename.c_str());
             uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
             if (!Update.begin(maxSketchSpace))
-            { //start with max available size
+            { // start with max available size
               Update.printError(Serial);
             }
           }
@@ -102,7 +101,7 @@ void setup()
           else if (upload.status == UPLOAD_FILE_END)
           {
             if (Update.end(true))
-            { //true to set the size to the current progress
+            { // true to set the size to the current progress
               Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
             }
             else
@@ -126,7 +125,7 @@ void setup()
   //  pzem.resetEnergy(); //reset energy
 
   // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-  iot.begin(email, pass);
+  iot.begin(email, pass, SERVER);
 }
 
 void loop()
@@ -139,13 +138,13 @@ void loop()
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= 1000)
-  { //run every 1 second
+  { // run every 1 second
     previousMillis = currentMillis;
-    displayValue(); //update OLED
+    displayValue(); // update OLED
 
     /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
     ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
-    ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN  
+    ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN
     เช่น ต้องการส่งแค่ voltage current power
     iot.update(voltage, current, power, NAN, NAN, NAN);    */
     iot.update(voltage, current, power, energy, frequency, pf);
@@ -154,36 +153,36 @@ void loop()
 
 void displayValue()
 {
-    //------read data------
-    voltage = pzem.voltage();
-    if (!isnan(voltage))
-    { // ถ้าอ่านค่าได้
-      current = pzem.current();
-      power = pzem.power();
-      energy = pzem.energy();
-      frequency = pzem.frequency();
-      pf = pzem.pf();
-    }
-    else
-    { // ถ้าอ่านค่าไม่ได้ให้ใส่ค่า NAN(not a number)
-      current = NAN;
-      power = NAN;
-      energy = NAN;
-      frequency = NAN;
-      pf = NAN;
-    }
+  //------read data------
+  voltage = pzem.voltage();
+  if (!isnan(voltage))
+  { // ถ้าอ่านค่าได้
+    current = pzem.current();
+    power = pzem.power();
+    energy = pzem.energy();
+    frequency = pzem.frequency();
+    pf = pzem.pf();
+  }
+  else
+  { // ถ้าอ่านค่าไม่ได้ให้ใส่ค่า NAN(not a number)
+    current = NAN;
+    power = NAN;
+    energy = NAN;
+    frequency = NAN;
+    pf = NAN;
+  }
 
   //------Update OLED display------
   oled.clear(PAGE);
   oled.setFontType(0);
 
-  //display voltage
+  // display voltage
   oled.setCursor(3, 0);
   oled.print(voltage, 1);
   oled.setCursor(46, 0);
   oled.println("V");
 
-  //display current
+  // display current
   if (current < 10)
     oled.setCursor(9, 12);
   else
@@ -192,7 +191,7 @@ void displayValue()
   oled.setCursor(46, 12);
   oled.println("A");
 
-  //display power
+  // display power
   if (power < 10)
     oled.setCursor(26, 24);
   else if (power < 100)
@@ -207,7 +206,7 @@ void displayValue()
   oled.setCursor(46, 24);
   oled.println("W");
 
-  //display energy
+  // display energy
   oled.setCursor(3, 36);
   if (energy < 10)
     oled.print(energy, 3);
@@ -223,7 +222,7 @@ void displayValue()
   oled.setCursor(46, 36);
   oled.println("kWh");
 
-  //on error
+  // on error
   if (isnan(voltage))
   {
     oled.clear(PAGE);

@@ -48,13 +48,13 @@ private:
   void acMeter();
 
 public:
-  Iotbundle(String server, String project);
+  Iotbundle( String project);
 
   // flag connect to server
   bool serverConnected;
 
   // connect and login
-  void begin(String email, String pass);
+  void begin(String email, String pass,String server="https://iotkiddie.com");
 
   // send data to server
   void handle();

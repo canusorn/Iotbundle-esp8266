@@ -28,8 +28,10 @@
 #include <ESP8266mDNS.h>
 #include <iotbundle.h>
 
-// 1 สร้าง object ชื่อ iot และกำหนดค่า(server,project)
-Iotbundle iot("IOTKID", "AC_METER");
+// 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
+#define PROJECT "AC_METER"
+#define SERVER "IOTKIDDIE"
+Iotbundle iot(PROJECT);
 
 #define PIN_RESET -1
 #define DC_JUMPER 0
@@ -40,7 +42,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.01"
+#define CONFIG_VERSION "0.002"
 #define CONFIG_PIN D5
 //#define IOTWEBCONF_CONFIG_USE_MDNS 80
 //#define STATUS_PIN LED_BUILTIN
@@ -58,6 +60,7 @@ ESP8266HTTPUpdateServer httpUpdater;
 
 char emailParamValue[STRING_LEN];
 char passParamValue[STRING_LEN];
+char serverParamValue[STRING_LEN];
 
 IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword, CONFIG_VERSION);
 // -- You can also use namespace formats e.g.: iotwebconf::TextParameter
@@ -65,6 +68,7 @@ IotWebConfParameterGroup login = IotWebConfParameterGroup("login", "ล็อก
 
 IotWebConfTextParameter emailParam = IotWebConfTextParameter("อีเมลล์", "emailParam", emailParamValue, STRING_LEN);
 IotWebConfPasswordParameter passParam = IotWebConfPasswordParameter("รหัสผ่าน", "passParam", passParamValue, STRING_LEN);
+IotWebConfTextParameter serverParam = IotWebConfTextParameter("เซิฟเวอร์", "serverParam", serverParamValue, STRING_LEN, "https://iotkiddie.com");
 
 MicroOLED oled(PIN_RESET, DC_JUMPER); // Example I2C declaration, uncomment if using I2C
 PZEM004Tv30 pzem(D3, D4);             // rx,tx pin
@@ -97,6 +101,7 @@ void setup()
 
   login.addItem(&emailParam);
   login.addItem(&passParam);
+  login.addItem(&serverParam);
 
   //  iotWebConf.setStatusPin(STATUS_PIN);
   iotWebConf.setConfigPin(CONFIG_PIN);
@@ -331,7 +336,10 @@ void wifiConnected()
     Serial.println("login");
 
     // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-    iot.begin((String)emailParamValue, (String)passParamValue);
+    if ((String)passParamValue != "")
+      iot.begin((String)serverParamValue, (String)emailParamValue, (String)passParamValue);
+    else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
+      iot.begin((String)serverParamValue, (String)emailParamValue);
   }
 }
 
