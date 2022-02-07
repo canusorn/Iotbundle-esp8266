@@ -60,14 +60,11 @@ void Iotbundle::handle()
     {
       if (_user_id > 0)
       {
-        if (var_index)
+        if (_project_id == 1)
         {
-          if (_project_id == 1)
-          {
-            DEBUGLN("sending data to server");
-            readio();
-            acMeter();
-          }
+          DEBUGLN("sending data to server");
+          readio();
+          acMeter();
         }
       }
       else
@@ -214,19 +211,25 @@ void Iotbundle::iohandle_s()
 void Iotbundle::readio()
 {
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  uint16_t useio = io & _AllowIO;
+  // uint16_t useio = _AllowIO;
   uint16_t currentio;
+  // pinMode(D5, INPUT);
   for (int i = 0; i < 9; i++)
   {
-    if (bitRead(useio, i))
+
+    if (bitRead(_AllowIO, i))
     { // use only allow pin
       bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
+      // DEBUG(digitalRead(wemosGPIO[i]));
     }
   }
+
+  DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
+
   if (io != currentio)
   {
     DEBUGLN("newio:" + String(currentio, BIN));
-    newio_s = true;
+    newio_c = true;
     io = currentio;
   }
 }
@@ -238,18 +241,21 @@ void Iotbundle::acMeter()
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
-  if (!isnan(var_sum[0]))
-    url += "&voltage=" + String(var_sum[0] / var_index, 1);
-  if (!isnan(var_sum[1]))
-    url += "&current=" + String(var_sum[1] / var_index, 3);
-  if (!isnan(var_sum[2]))
-    url += "&power=" + String(var_sum[2] / var_index, 1);
-  if (!isnan(var_sum[3]))
-    url += "&energy=" + String(var_sum[3] / var_index, 3);
-  if (!isnan(var_sum[4]))
-    url += "&frequency=" + String(var_sum[4] / var_index, 1);
-  if (!isnan(var_sum[5]))
-    url += "&pf=" + String(var_sum[5] / var_index, 2);
+  if (var_index)
+  {
+    if (!isnan(var_sum[0]))
+      url += "&voltage=" + String(var_sum[0] / var_index, 1);
+    if (!isnan(var_sum[1]))
+      url += "&current=" + String(var_sum[1] / var_index, 3);
+    if (!isnan(var_sum[2]))
+      url += "&power=" + String(var_sum[2] / var_index, 1);
+    if (!isnan(var_sum[3]))
+      url += "&energy=" + String(var_sum[3] / var_index, 3);
+    if (!isnan(var_sum[4]))
+      url += "&frequency=" + String(var_sum[4] / var_index, 1);
+    if (!isnan(var_sum[5]))
+      url += "&pf=" + String(var_sum[5] / var_index, 2);
+  }
   if (newio_c)
     url += "&io_c=" + String(io);
   else if (newio_s)
