@@ -337,9 +337,9 @@ void wifiConnected()
 
     // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
     if ((String)passParamValue != "")
-      iot.begin((String)serverParamValue, (String)emailParamValue, (String)passParamValue);
+      iot.begin((String)emailParamValue, (String)passParamValue,(String)serverParamValue );
     else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
-      iot.begin((String)serverParamValue, (String)emailParamValue);
+      iot.begin((String)emailParamValue, (String)passParamValue);
   }
 }
 
