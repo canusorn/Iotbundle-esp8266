@@ -1,6 +1,6 @@
-  // bit command
-  // 10bit 0b1111111111  = pin A0,8,7,6,5,4,3,2,1,0  (pin 1,2 is i2c)   in/out = 1,readA0/0
-  // 9bit 0b111111111 = pin 8,7,6,5,4,3,2,1,0    HIGH/LOW = 1/0
+// bit command
+// 10bit 0b1111111111  = pin A0,8,7,6,5,4,3,2,1,0  (pin 1,2 is i2c)   in/out = 1,readA0/0
+// 9bit 0b111111111 = pin 8,7,6,5,4,3,2,1,0    HIGH/LOW = 1/0
 
 #ifndef iotbundle_h
 #define iotbundle_h
@@ -28,11 +28,11 @@ private:
   uint32_t _previousMillis;
   uint8_t sendtime = 2;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
-  bool newio_s = true, newio_c = false; //flag new io from server,clients has change
-  uint16_t io;                          // current io output
-  uint16_t _AllowIO;                     // pin to allow to write
+  bool newio_s = true, newio_c = false; // flag new io from server,clients has change
+  uint16_t io, previo;                  // current io output, previous io
+  uint16_t _AllowIO;                    // pin to allow to write
 
-  //clear sum variables
+  // clear sum variables
   void clearvar();
 
   // get method with ssl
@@ -41,23 +41,26 @@ private:
   // handle io from server
   void iohandle_s();
 
+  // read io and update to server
+  void readio();
+
+  // set input and low for allow pin
+  void init_io();
+
   // parse json from payload
   int16_t Stringparse(String payload);
 
   // handle data acmeter'project
   void acMeter();
 
-  // read io and update to server
-  void readio();
-
 public:
-  Iotbundle( String project);
+  Iotbundle(String project);
 
   // flag connect to server
   bool serverConnected;
 
   // connect and login
-  void begin(String email, String pass,String server="https://iotkiddie.com");
+  void begin(String email, String pass, String server = "https://iotkiddie.com");
 
   // send data to server
   void handle();
@@ -67,6 +70,9 @@ public:
 
   // get status
   bool status();
+
+  // set allow io pin
+  void setAllowIO(uint16_t allowio);
 };
 
 // for set debug mode

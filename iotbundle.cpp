@@ -16,6 +16,9 @@ Iotbundle::Iotbundle(String project)
   else if (project == "DC_METER")
     this->_project_id = 3;
 
+  // set all allow pin to low
+  init_io();
+
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
 }
@@ -37,7 +40,7 @@ void Iotbundle::begin(String email, String pass, String server)
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
   url += "&project_id=" + String(this->_project_id);
-  DEBUGLN(url);
+  // DEBUGLN(url);
 
   String payload = getDataSSL(url);
 
@@ -63,19 +66,20 @@ void Iotbundle::handle()
         if (_project_id == 1)
         {
           DEBUGLN("sending data to server");
-          readio();
+          if (!newio_s)
+            readio();
           acMeter();
         }
       }
       else
       {
         _get_userid++;
-        if (_get_userid >= retryget_userid)
+        if (_get_userid >= retryget_userid/sendtime)
         {
           _get_userid = 0;
 
           DEBUGLN("retry login");
-          begin(this->_server, this->_email, this->_pass);
+          begin(this->_email, this->_pass, this->_server);
         }
       }
     }
@@ -134,6 +138,10 @@ String Iotbundle::getDataSSL(String url)
     if (https.begin(*client, url))
     { // HTTP
       url = "";
+
+      // start timer
+      uint32_t startGet = millis();
+
       DEBUG("[HTTPS] GET...\n");
       // start connection and send HTTP header
       int httpCode = https.GET();
@@ -169,6 +177,10 @@ String Iotbundle::getDataSSL(String url)
       }
 
       https.end();
+
+      // end timer and show update time
+      uint32_t endGet = millis();
+      DEBUGLN("update time : " + String(endGet - startGet) + " ms");DEBUGLN();
     }
     else
     {
@@ -189,23 +201,28 @@ void Iotbundle::iohandle_s()
 { // handle io from server
   DEBUGLN("io:" + String(io, BIN));
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  uint16_t useio = io & _AllowIO;
+  uint16_t useio = io ^ previo;                           // change only difference io
+  DEBUG("writing io -> ");
   for (int i = 0; i < 9; i++)
   {
-    if (bitRead(useio, i))
+    if (bitRead(_AllowIO, i) && bitRead(useio, i))
     { // use only allow pin
       if (bitRead(io, i))
       {
         pinMode(wemosGPIO[i], OUTPUT);
         digitalWrite(wemosGPIO[i], HIGH);
+        DEBUG("io:" + String(i) + "=HIGH, ");
       }
       else
       {
         pinMode(wemosGPIO[i], OUTPUT);
         digitalWrite(wemosGPIO[i], LOW);
+        DEBUG("io:" + String(i) + "=LOW, ");
       }
     }
   }
+  previo=io;
+  DEBUGLN();
 }
 
 void Iotbundle::readio()
@@ -214,16 +231,17 @@ void Iotbundle::readio()
   // uint16_t useio = _AllowIO;
   uint16_t currentio;
   // pinMode(D5, INPUT);
+  DEBUG("reading io -> ");
   for (int i = 0; i < 9; i++)
   {
 
     if (bitRead(_AllowIO, i))
     { // use only allow pin
       bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
-      // DEBUG(digitalRead(wemosGPIO[i]));
+      DEBUG("io:" + String(i) + "=" + (String)digitalRead(wemosGPIO[i]) + ", ");
     }
   }
-
+  DEBUGLN();
   DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
 
   if (io != currentio)
@@ -232,6 +250,26 @@ void Iotbundle::readio()
     newio_c = true;
     io = currentio;
   }
+}
+
+void Iotbundle::setAllowIO(uint16_t allowio)
+{
+  this->_AllowIO = allowio;
+  init_io();
+}
+
+void Iotbundle::init_io()
+{
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  for (int i = 0; i < 9; i++)
+  {
+    if (bitRead(_AllowIO, i))
+    { // use only allow pin
+      // pinMode(wemosGPIO[i], OUTPUT);
+      digitalWrite(wemosGPIO[i], LOW);
+    }
+  }
+  DEBUGLN();
 }
 
 void Iotbundle::acMeter()
