@@ -74,7 +74,7 @@ void Iotbundle::handle()
       else
       {
         _get_userid++;
-        if (_get_userid >= retryget_userid/sendtime)
+        if (_get_userid >= retryget_userid / sendtime)
         {
           _get_userid = 0;
 
@@ -88,24 +88,27 @@ void Iotbundle::handle()
 
 void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
-  var_index++;
-  var_sum[0] += var1;
-  var_sum[1] += var2;
-  var_sum[2] += var3;
-  var_sum[3] += var4;
-  var_sum[4] += var5;
-  var_sum[5] += var6;
-  var_sum[6] += var7;
-  var_sum[7] += var8;
-  var_sum[8] += var9;
-  var_sum[9] += var10;
-
-  DEBUG("updated data " + String(var_index) + " -> ");
-  for (int i = 0; i < sizeof(var_sum) / sizeof(var_sum[0]); i++)
+  if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan 
   {
-    DEBUG(String(var_sum[i]) + ", ");
+    var_index++;
+    var_sum[0] += var1;
+    var_sum[1] += var2;
+    var_sum[2] += var3;
+    var_sum[3] += var4;
+    var_sum[4] += var5;
+    var_sum[5] += var6;
+    var_sum[6] += var7;
+    var_sum[7] += var8;
+    var_sum[8] += var9;
+    var_sum[9] += var10;
+
+    DEBUG("updated data " + String(var_index) + " -> ");
+    for (int i = 0; i < sizeof(var_sum) / sizeof(var_sum[0]); i++)
+    {
+      DEBUG(String(var_sum[i]) + ", ");
+    }
+    DEBUGLN();
   }
-  DEBUGLN();
 }
 
 void Iotbundle::clearvar()
@@ -125,69 +128,70 @@ String Iotbundle::getDataSSL(String url)
   client->setInsecure();
   HTTPClient https;
 
-  const char *headerNames[] = {"Location"};
-  https.collectHeaders(headerNames, sizeof(headerNames) / sizeof(headerNames[0]));
+  // const char *headerNames[] = {"Location"};
+  // https.collectHeaders(headerNames, sizeof(headerNames) / sizeof(headerNames[0]));
 
   DEBUG("[HTTPS] begin...\n");
 
   DEBUGLN(url);
 
-  while (!(url == ""))
-  {
+  // while (!(url == ""))
+  // {
 
-    if (https.begin(*client, url))
-    { // HTTP
-      url = "";
+  if (https.begin(*client, url))
+  { // HTTP
+    // url = "";
 
-      // start timer
-      uint32_t startGet = millis();
+    // start timer
+    uint32_t startGet = millis();
 
-      DEBUG("[HTTPS] GET...\n");
-      // start connection and send HTTP header
-      int httpCode = https.GET();
+    DEBUG("[HTTPS] GET...\n");
+    // start connection and send HTTP header
+    int httpCode = https.GET();
 
-      // httpCode will be negative on error
-      if (httpCode > 0)
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
       {
-        // HTTP header has been send and Server response header has been handled
-        DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
+        payload = https.getString();
+        DEBUGLN(payload);
 
-        // file found at server
-        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
-        {
-          payload = https.getString();
-          DEBUGLN(payload);
-
-          serverConnected = true;
-        }
-        else
-        {
-          serverConnected = false;
-        }
-        if (https.hasHeader("Location"))
-        { // if has redirect code
-          url = https.header("Location");
-          DEBUGLN(url);
-        }
+        serverConnected = true;
       }
       else
       {
-        DEBUGLN("[HTTPS] GET... failed, error: " + https.errorToString(httpCode));
         serverConnected = false;
       }
-
-      https.end();
-
-      // end timer and show update time
-      uint32_t endGet = millis();
-      DEBUGLN("update time : " + String(endGet - startGet) + " ms");DEBUGLN();
+      // if (https.hasHeader("Location"))
+      // { // if has redirect code
+      //   url = https.header("Location");
+      //   DEBUGLN(url);
+      // }
     }
     else
     {
-      DEBUGLN("[HTTPS} Unable to connect");
+      DEBUGLN("[HTTPS] GET... failed, error: " + https.errorToString(httpCode));
       serverConnected = false;
     }
+
+    https.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
   }
+  else
+  {
+    DEBUGLN("[HTTPS} Unable to connect");
+    serverConnected = false;
+  }
+  // }
 
   return payload;
 }
@@ -221,7 +225,7 @@ void Iotbundle::iohandle_s()
       }
     }
   }
-  previo=io;
+  previo = io;
   DEBUGLN();
 }
 

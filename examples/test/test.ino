@@ -16,7 +16,7 @@
 // #define SERVER "https://iotkid.space"
 Iotbundle iot(PROJECT);
 
-const char *ssid = "G6PD";
+const char *ssid = "G6PD_2.4G";
 const char *password = "570610193";
 
 String email = "anusorn1998@gmail.com";
