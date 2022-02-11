@@ -88,7 +88,7 @@ void Iotbundle::handle()
 
 void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
-  if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan 
+  if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan
   {
     var_index++;
     var_sum[0] += var1;
@@ -278,25 +278,34 @@ void Iotbundle::init_io()
 
 void Iotbundle::acMeter()
 {
+ // calculate
+  float v = var_sum[0] / var_index;
+  float i = var_sum[1] / var_index;
+  float p = var_sum[2] / var_index;
+  float e = var_sum[3] / var_index;
+  float f = var_sum[4] / var_index;
+  float pf = var_sum[5] / var_index;
+
+// create string
   String url = this->_server + "/api/";
   url += String(_project_id);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
   if (var_index)
-  {
-    if (!isnan(var_sum[0]))
-      url += "&voltage=" + String(var_sum[0] / var_index, 1);
-    if (!isnan(var_sum[1]))
-      url += "&current=" + String(var_sum[1] / var_index, 3);
-    if (!isnan(var_sum[2]))
-      url += "&power=" + String(var_sum[2] / var_index, 1);
-    if (!isnan(var_sum[3]))
-      url += "&energy=" + String(var_sum[3] / var_index, 3);
-    if (!isnan(var_sum[4]))
-      url += "&frequency=" + String(var_sum[4] / var_index, 1);
-    if (!isnan(var_sum[5]))
-      url += "&pf=" + String(var_sum[5] / var_index, 2);
+  { // validate
+    if (v >= 60 && v <= 260 && !isnan(v))
+      url += "&voltage=" + String(v, 1);
+    if (i >= 0 && i <= 100 && !isnan(i))
+      url += "&current=" + String(i, 3);
+    if (p >= 0 && p <= 24000 && !isnan(p))
+      url += "&power=" + String(p, 1);
+    if (e >= 0 && e <= 10000 && !isnan(e))
+      url += "&energy=" + String(e, 3);
+    if (f >= 40 && f <= 70 && !isnan(f))
+      url += "&frequency=" + String(f, 1);
+    if (pf >= 0 && pf <= 1 && !isnan(pf))
+      url += "&pf=" + String(pf, 2);
   }
   if (newio_c)
     url += "&io_c=" + String(io);

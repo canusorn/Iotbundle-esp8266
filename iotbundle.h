@@ -10,7 +10,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
-#define IOTBUNDLE_DEBUG
+// #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 
 class Iotbundle
@@ -26,7 +26,7 @@ private:
   float var_sum[10]; // store sum variables
   uint8_t var_index; // number of store file
   uint32_t _previousMillis;
-  uint8_t sendtime = 2;                 // delay time to send in second
+  uint8_t sendtime = 5;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = true, newio_c = false; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
