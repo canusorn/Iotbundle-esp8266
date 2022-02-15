@@ -305,12 +305,16 @@ void handleRoot()
     return;
   }
   String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
-  s += "<title>Iotbundle AC Powermeter config</title></head><body>สวัสดีชาวโลก";
+  s += "<title>Iotkiddie AC Powermeter config</title></head><body>IoTkiddie config data";
   s += "<ul>";
+  s += "<li>Device name : ";
+  s += String(iotWebConf.getThingName());
   s += "<li>อีเมลล์ : ";
   s += emailParamValue;
   s += "<li>ESP ID : ";
   s += ESP.getChipId();
+  s += "<li>Server : ";
+  s += serverParamValue;
   s += "</ul>";
   s += "Go to <a href='config'>configure page</a> to change values.";
   s += "</body></html>\n";
@@ -337,7 +341,7 @@ void wifiConnected()
 
     // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
     if ((String)passParamValue != "")
-      iot.begin((String)emailParamValue, (String)passParamValue,(String)serverParamValue );
+      iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
     else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
       iot.begin((String)emailParamValue, (String)passParamValue);
   }
