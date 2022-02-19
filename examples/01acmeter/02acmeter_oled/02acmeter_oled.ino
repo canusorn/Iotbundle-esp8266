@@ -14,20 +14,21 @@
 #include <ESP8266mDNS.h>
 #include <iotbundle.h>
 
-// 1 สร้าง object ชื่อ iot และกำหนดค่า(server,project)
+// 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
 #define PROJECT "AC_METER"
-#define SERVER "https://iotkiddie.com"
 Iotbundle iot(PROJECT);
 
 #define PIN_RESET -1
 #define DC_JUMPER 0
 
-const char *ssid = "G6PD_2.4G";
-const char *password = "570610193";
-const char *host = "powermeter-test";
+// 1.1.ใส่ข้อมูลไวไฟ
+const char *ssid = "wifi_ssid";
+const char *password = "wifi_pass";
+const char *host = "acmeter";
 
-String email = "anusorn1998@gmail.com";
-String pass = "vo6liIN";
+// 1.2.ใส่ข้อมูล user ที่สมัครกับเว็บ iotkiddie.com
+String email = "test@iotkiddie.com";
+String pass = "12345678";
 
 MicroOLED oled(PIN_RESET, DC_JUMPER); // Example I2C declaration, uncomment if using I2C
 PZEM004Tv30 pzem(D3, D4);             // rx,tx pin
@@ -64,6 +65,7 @@ void setup()
     Serial.print(".");
   }
 
+// ส่วนของ update ด้วย binary file
   if (WiFi.waitForConnectResult() == WL_CONNECTED)
   {
     MDNS.begin(host);
@@ -125,7 +127,7 @@ void setup()
   //  pzem.resetEnergy(); //reset energy
 
   // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-  iot.begin(email, pass, SERVER);
+  iot.begin(email, pass);
 }
 
 void loop()
