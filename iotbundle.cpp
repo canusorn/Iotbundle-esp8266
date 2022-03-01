@@ -392,7 +392,7 @@ void Iotbundle::pmMeter()
   if (var_index)
   { // validate
     if (pm1 >= 0 && pm1 <= 1999 && !isnan(pm1))
-      url += "&pm1=" + String(pm2);
+      url += "&pm1=" + String(pm1);
     if (pm2 >= 0 && pm2 <= 1999 && !isnan(pm2))
       url += "&pm2=" + String(pm2);
     if (pm10 >= 0 && pm10 <= 1999 && !isnan(pm10))
