@@ -231,6 +231,8 @@ void handleRoot()
   s += String(iotWebConf.getThingName());
   s += "<li>อีเมลล์ : ";
   s += emailParamValue;
+  s += "<li>WIFI SSID : ";
+  s += String(iotWebConf.getSSID());
   s += "<li>ESP ID : ";
   s += ESP.getChipId();
   s += "<li>Server : ";
