@@ -240,7 +240,7 @@ void display_update()
     {
       displaytime = 5;
       prev_state = curr_state;
-      noti = "-State-\n\nwifi\nconnect\nsuccess";
+      noti = "-State-\n\nwifi\nconnect\nsuccess\n"+String(WiFi.RSSI())+ " dBm";
     }
   }
 
@@ -306,6 +306,8 @@ void handleRoot()
   s += emailParamValue;
   s += "<li>WIFI SSID : ";
   s += String(iotWebConf.getSSID());
+  s += "<li>RSSI : ";
+  s += String(WiFi.RSSI()) + " dBm";
   s += "<li>ESP ID : ";
   s += ESP.getChipId();
   s += "<li>Server : ";
