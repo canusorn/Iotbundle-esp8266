@@ -82,6 +82,9 @@ uint8_t wifi_off[] = {0x88, 0x44, 0x32, 0xDA, 0xCA, 0x16, 0x06, 0x09};
 uint8_t wifi_ap[] = {0x3E, 0x41, 0x1C, 0x00, 0xF8, 0x00, 0x1C, 0x41, 0x3E};
 uint8_t wifi_nointernet[] = {0x04, 0x12, 0xCA, 0xCA, 0x12, 0x04, 0x5F, 0xDF};
 uint8_t t_connecting;
+iotwebconf::NetworkState prev_state = iotwebconf::Boot;
+uint8_t displaytime;
+String noti;
 
 void setup()
 {
@@ -241,10 +244,80 @@ void displayValue()
     oled.printf("Please\n\nConnect\n\nPZEM004T");
   }
 
+  // display status
+  iotwebconf::NetworkState curr_state = iotWebConf.getState();
+  if (curr_state == iotwebconf::Boot)
+  {
+    prev_state = curr_state;
+  }
+  else if (curr_state == iotwebconf::NotConfigured)
+  {
+    if (prev_state == iotwebconf::Boot)
+    {
+      displaytime = 5;
+      prev_state = curr_state;
+      noti = "-State-\n\nno config\nstay in AP Mode";
+    }
+  }
+  else if (curr_state == iotwebconf::ApMode)
+  {
+    if (prev_state == iotwebconf::Boot)
+    {
+      displaytime = 5;
+      prev_state = curr_state;
+      noti = "-State-\n\nAP Mode\nfor 30 sec";
+    }
+    else if (prev_state == iotwebconf::Connecting)
+    {
+      displaytime = 5;
+      prev_state = curr_state;
+      noti = "-State-\n\nX  can't\nconnect\nwifi\ngo AP Mode";
+    }
+    else if (prev_state == iotwebconf::OnLine)
+    {
+      displaytime =10;
+      prev_state = curr_state;
+      noti = "-State-\n\nX  wifi\ndisconnect\ngo AP Mode";
+    }
+  }
+  else if (curr_state == iotwebconf::Connecting)
+  {
+    if (prev_state == iotwebconf::ApMode)
+    {
+      displaytime = 5;
+      prev_state = curr_state;
+      noti = "-State-\n\nwifi\nconnecting";
+    }
+    else if (prev_state == iotwebconf::OnLine)
+    {
+      displaytime = 10;
+      prev_state = curr_state;
+      noti = "-State-\n\nX  wifi\ndisconnect\nreconnecting";
+    }
+  }
+  else if (curr_state == iotwebconf::OnLine)
+  {
+    if (prev_state == iotwebconf::Connecting)
+    {
+      displaytime = 5;
+      prev_state = curr_state;
+      noti = "-State-\n\nwifi\nconnect\nsuccess";
+    }
+  }
+
+  if (displaytime)
+  {
+    displaytime--;
+    oled.clear(PAGE);
+    oled.setCursor(0, 0);
+    oled.print(noti);
+    Serial.println(noti);
+  }
+
   // display state
-  if (iotWebConf.getState() == 1 || iotWebConf.getState() == 2)
+  if (curr_state == iotwebconf::NotConfigured || curr_state == iotwebconf::ApMode)
     oled.drawIcon(55, 0, 9, 8, wifi_ap, sizeof(wifi_ap), true);
-  else if (iotWebConf.getState() == 3)
+  else if (curr_state == iotwebconf::Connecting)
   {
     if (t_connecting == 1)
     {
@@ -256,14 +329,14 @@ void displayValue()
       t_connecting = 1;
     }
   }
-  else if (iotWebConf.getState() == 4)
+  else if (curr_state == iotwebconf::OnLine)
   {
     if (iot.serverConnected)
       oled.drawIcon(56, 0, 8, 8, wifi_on, sizeof(wifi_on), true);
     else
       oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
   }
-  else if (iotWebConf.getState() == 5)
+  else if (curr_state == iotwebconf::OffLine)
     oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
   oled.display();
