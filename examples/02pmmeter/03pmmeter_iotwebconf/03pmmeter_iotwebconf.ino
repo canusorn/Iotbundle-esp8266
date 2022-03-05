@@ -51,6 +51,7 @@ PMS::DATA data;
 MicroOLED oled(PIN_RESET, DC_JUMPER);
 
 unsigned long previousMillis = 0, currentMillis = 0;
+bool sensordetect = true;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -83,6 +84,7 @@ void setup()
 {
   Serial.begin(115200);
   pmsSerial.begin(9600);
+  Wire.begin();
 
   //------Display LOGO at start------
   oled.begin();
@@ -144,7 +146,7 @@ void loop()
   if (pms.read(data))
   {
     display_update();
-
+    sensordetect = true;
     /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
         ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
@@ -156,32 +158,41 @@ void loop()
   currentMillis = millis();
   if (currentMillis - previousMillis >= 2000)
   {
+    sensordetect = false;
     previousMillis = currentMillis;
-    oled.clear(PAGE);
-    oled.setFontType(0);
-    oled.setCursor(0, 0);
-    oled.println("No Sensor");
-    oled.print("detect!");
-    oled.display();
+    display_update();
   }
 }
 
 void display_update()
 {
   //------Update OLED------
-  oled.clear(PAGE);
-  oled.setFontType(0);
-  oled.setCursor(0, 0);
-  oled.println("PM [ug/m3]");
-  oled.setCursor(0, 15);
-  oled.print(" 1.0 : ");
-  oled.print(data.PM_AE_UG_1_0);
-  oled.setCursor(0, 26);
-  oled.print(" 2.5 : ");
-  oled.print(data.PM_AE_UG_2_5);
-  oled.setCursor(0, 37);
-  oled.print("10.0 : ");
-  oled.print(data.PM_AE_UG_10_0);
+  if (sensordetect)
+  {
+    oled.clear(PAGE);
+    oled.setFontType(0);
+    oled.setCursor(0, 0);
+    oled.println("PM [ug/m3]");
+    oled.setCursor(0, 15);
+    oled.print(" 1.0 : ");
+    oled.print(data.PM_AE_UG_1_0);
+    oled.setCursor(0, 26);
+    oled.print(" 2.5 : ");
+    oled.print(data.PM_AE_UG_2_5);
+    oled.setCursor(0, 37);
+    oled.print("10.0 : ");
+    oled.print(data.PM_AE_UG_10_0);
+  }
+
+  // if no data from sensor
+  else
+  {
+    oled.clear(PAGE);
+    oled.setFontType(0);
+    oled.setCursor(0, 0);
+    oled.println("No Sensor");
+    oled.print("detect!");
+  }
 
   // display status
   iotwebconf::NetworkState curr_state = iotWebConf.getState();
@@ -195,7 +206,7 @@ void display_update()
     {
       displaytime = 5;
       prev_state = curr_state;
-      noti = "-State-\n\nno config\nstay in AP Mode";
+      noti = "-State-\n\nno config\nstay in\nAP Mode";
     }
   }
   else if (curr_state == iotwebconf::ApMode)
@@ -240,7 +251,7 @@ void display_update()
     {
       displaytime = 5;
       prev_state = curr_state;
-      noti = "-State-\n\nwifi\nconnect\nsuccess\n"+String(WiFi.RSSI())+ " dBm";
+      noti = "-State-\n\nwifi\nconnect\nsuccess\n" + String(WiFi.RSSI()) + " dBm";
     }
   }
 
@@ -281,12 +292,18 @@ void display_update()
   oled.display();
 
   //------print on serial moniter------
-  Serial.print("PM 1.0 (ug/m3): ");
-  Serial.println(data.PM_AE_UG_1_0);
-  Serial.print("PM 2.5 (ug/m3): ");
-  Serial.println(data.PM_AE_UG_2_5);
-  Serial.print("PM 10.0 (ug/m3): ");
-  Serial.println(data.PM_AE_UG_10_0);
+  if (sensordetect)
+  {
+    Serial.print("PM 1.0 (ug/m3): ");
+    Serial.println(data.PM_AE_UG_1_0);
+    Serial.print("PM 2.5 (ug/m3): ");
+    Serial.println(data.PM_AE_UG_2_5);
+    Serial.print("PM 10.0 (ug/m3): ");
+    Serial.println(data.PM_AE_UG_10_0);
+  }
+  else{
+    Serial.println("no sensor detect");
+  }
 }
 
 void handleRoot()

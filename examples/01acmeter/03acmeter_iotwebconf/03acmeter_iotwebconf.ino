@@ -256,7 +256,7 @@ void displayValue()
     {
       displaytime = 5;
       prev_state = curr_state;
-      noti = "-State-\n\nno config\nstay in AP Mode";
+      noti = "-State-\n\nno config\nstay in\nAP Mode";
     }
   }
   else if (curr_state == iotwebconf::ApMode)
