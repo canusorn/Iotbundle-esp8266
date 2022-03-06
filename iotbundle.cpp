@@ -70,6 +70,13 @@ void Iotbundle::handle()
             readio();
           acMeter();
         }
+        else if (_project_id == 2)
+        {
+          DEBUGLN("sending data to server");
+          if (!newio_s)
+            readio();
+          pmMeter();
+        }
       }
       else
       {
@@ -276,6 +283,37 @@ void Iotbundle::init_io()
   DEBUGLN();
 }
 
+int16_t Iotbundle::Stringparse(String payload)
+{
+  int str_len = payload.length() + 1;
+  char buff[str_len];
+  payload.toCharArray(buff, str_len);
+
+  int j = 0;
+  String user_id_r_str, io_s_str;
+
+  for (int i = 0; i < str_len; i++)
+  {
+    if (j == 0)
+      user_id_r_str += buff[i];
+    else if (j == 1)
+      io_s_str += buff[i];
+
+    if (buff[i] == '&')
+      j++;
+  }
+
+  if (user_id_r_str.toInt() == _user_id) // check correct data
+    return io_s_str.toInt();
+  else if (user_id_r_str.toInt() == 0)
+  {
+    DEBUGLN("!error:" + io_s_str);
+    return -1;
+  }
+  else
+    return user_id_r_str.toInt();
+}
+
 void Iotbundle::acMeter()
 {
  // calculate
@@ -338,33 +376,55 @@ void Iotbundle::acMeter()
     clearvar();
 }
 
-int16_t Iotbundle::Stringparse(String payload)
+void Iotbundle::pmMeter()
 {
-  int str_len = payload.length() + 1;
-  char buff[str_len];
-  payload.toCharArray(buff, str_len);
+ // calculate
+  uint16_t pm1 = var_sum[0] / var_index;
+  uint16_t pm2 = var_sum[1] / var_index;
+  uint16_t pm10 = var_sum[2] / var_index;
 
-  int j = 0;
-  String user_id_r_str, io_s_str;
+// create string
+  String url = this->_server + "/api/";
+  url += String(_project_id);
+  url += "/update.php";
+  url += "?user_id=" + String(_user_id);
+  url += "&esp_id=" + _esp_id;
+  if (var_index)
+  { // validate
+    if (pm1 >= 0 && pm1 <= 1999 && !isnan(pm1))
+      url += "&pm1=" + String(pm1);
+    if (pm2 >= 0 && pm2 <= 1999 && !isnan(pm2))
+      url += "&pm2=" + String(pm2);
+    if (pm10 >= 0 && pm10 <= 1999 && !isnan(pm10))
+      url += "&pm10=" + String(pm10);
+  }
+  if (newio_c)
+    url += "&io_c=" + String(io);
+  else if (newio_s)
+    url += "&io_s=" + String(io);
 
-  for (int i = 0; i < str_len; i++)
+  String payload = getDataSSL(url);
+
+  if (payload != "")
   {
-    if (j == 0)
-      user_id_r_str += buff[i];
-    else if (j == 1)
-      io_s_str += buff[i];
-
-    if (buff[i] == '&')
-      j++;
+    int16_t newio = Stringparse(payload);
+    if (newio == 32767) // io from server updated
+    {
+      newio_s = false;
+    }
+    else if (newio == 32766) // io from client updated
+    {
+      newio_s = false;
+      newio_c = false;
+    }
+    else if (newio >= 0)
+    {
+      io = newio;
+      iohandle_s();
+      newio_s = true;
+    }
   }
 
-  if (user_id_r_str.toInt() == _user_id) // check correct data
-    return io_s_str.toInt();
-  else if (user_id_r_str.toInt() == 0)
-  {
-    DEBUGLN("!error:" + io_s_str);
-    return -1;
-  }
-  else
-    return user_id_r_str.toInt();
+  if (serverConnected)
+    clearvar();
 }
