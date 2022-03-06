@@ -19,6 +19,7 @@
 #include <SFE_MicroOLED.h>
 #include <PMS.h>
 #include <SoftwareSerial.h>
+#include <EEPROM.h>
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
@@ -31,7 +32,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.0.1"
+#define CONFIG_VERSION "0.0.2"
 #define CONFIG_PIN D5
 
 // -- Method declarations.
@@ -96,6 +97,22 @@ void setup()
   oled.print(" IoTbundle");
   oled.display();
 
+  // for clear eeprom jump D5 to GND
+  pinMode(D5, INPUT_PULLUP);
+  if (digitalRead(D5) == false)
+  {
+    delay(1000);
+    if (digitalRead(D5) == false)
+    {
+      oled.clear(PAGE);
+      oled.setCursor(0, 0);
+      oled.print("Clear All data\n rebooting");
+      oled.display();
+      delay(1000);
+      clearEEPROM();
+    }
+  }
+
   login.addItem(&emailParam);
   login.addItem(&passParam);
   login.addItem(&serverParam);
@@ -127,6 +144,8 @@ void setup()
   server.on("/", handleRoot);
   server.on("/config", []
             { iotWebConf.handleConfig(); });
+  server.on("/cleareeprom", clearEEPROM);
+  server.on("/reboot", reboot);
   server.onNotFound([]()
                     { iotWebConf.handleNotFound(); });
 
@@ -190,8 +209,7 @@ void display_update()
     oled.clear(PAGE);
     oled.setFontType(0);
     oled.setCursor(0, 0);
-    oled.println("No Sensor");
-    oled.print("detect!");
+    oled.printf("-Sensor-\n\nno sensor\ndetect!");
   }
 
   // display status
@@ -301,7 +319,8 @@ void display_update()
     Serial.print("PM 10.0 (ug/m3): ");
     Serial.println(data.PM_AE_UG_10_0);
   }
-  else{
+  else
+  {
     Serial.println("no sensor detect");
   }
 }
@@ -330,7 +349,8 @@ void handleRoot()
   s += "<li>Server : ";
   s += serverParamValue;
   s += "</ul>";
-  s += "Go to <a href='config'>configure page</a> to change values.";
+  s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
+  s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
   s += "</body></html>\n";
 
   server.send(200, "text/html", s);
@@ -375,4 +395,26 @@ bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
     }
   */
   return valid;
+}
+
+void clearEEPROM()
+{
+  EEPROM.begin(512);
+  // write a 0 to all 512 bytes of the EEPROM
+  for (int i = 0; i < 512; i++)
+  {
+    EEPROM.write(i, 0);
+  }
+
+  EEPROM.end();
+  server.send(200, "text/plain", "Clear all data\nrebooting");
+  delay(1000);
+  ESP.restart();
+}
+
+void reboot()
+{
+  server.send(200, "text/plain", "rebooting");
+  delay(1000);
+  ESP.restart();
 }
