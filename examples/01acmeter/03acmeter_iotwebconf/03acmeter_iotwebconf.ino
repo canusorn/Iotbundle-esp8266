@@ -27,6 +27,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <iotbundle.h>
+#include <EEPROM.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
 #define PROJECT "AC_METER"
@@ -41,7 +42,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.0.1"
+#define CONFIG_VERSION "0.0.2"
 #define CONFIG_PIN D5
 //#define IOTWEBCONF_CONFIG_USE_MDNS 80
 //#define STATUS_PIN LED_BUILTIN
@@ -132,6 +133,8 @@ void setup()
   server.on("/", handleRoot);
   server.on("/config", []
             { iotWebConf.handleConfig(); });
+  server.on("/cleareeprom", clearEEPROM);
+  server.on("/reboot", reboot);
   server.onNotFound([]()
                     { iotWebConf.handleNotFound(); });
 
@@ -275,7 +278,7 @@ void displayValue()
     }
     else if (prev_state == iotwebconf::OnLine)
     {
-      displaytime =10;
+      displaytime = 10;
       prev_state = curr_state;
       noti = "-State-\n\nX  wifi\ndisconnect\ngo AP Mode";
     }
@@ -301,7 +304,7 @@ void displayValue()
     {
       displaytime = 5;
       prev_state = curr_state;
-      noti = "-State-\n\nwifi\nconnect\nsuccess\n"+String(WiFi.RSSI())+ " dBm";
+      noti = "-State-\n\nwifi\nconnect\nsuccess\n" + String(WiFi.RSSI()) + " dBm";
     }
   }
 
@@ -377,7 +380,9 @@ void handleRoot()
     return;
   }
   String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
-  s += "<title>Iotkiddie AC Powermeter config</title></head><body>IoTkiddie config data";
+  s += "<title>Iotkiddie AC Powermeter config</title>";
+  if (iotWebConf.getState() == iotwebconf::NotConfigured) s+="<script>\nlocation.href='/config';\n</script>";
+  s+="</head><body>IoTkiddie config data";
   s += "<ul>";
   s += "<li>Device name : ";
   s += String(iotWebConf.getThingName());
@@ -392,7 +397,8 @@ void handleRoot()
   s += "<li>Server : ";
   s += serverParamValue;
   s += "</ul>";
-  s += "Go to <a href='config'>configure page</a> to change values.";
+  s +=  "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
+  s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
   s += "</body></html>\n";
 
   server.send(200, "text/html", s);
@@ -437,4 +443,24 @@ bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
     }
   */
   return valid;
+}
+
+void clearEEPROM()
+{
+  EEPROM.begin(512);
+  // write a 0 to all 512 bytes of the EEPROM
+  for (int i = 0; i < 512; i++)
+  {
+    EEPROM.write(i, 0);
+  }
+
+  EEPROM.end();
+  server.send(200, "text/plain", "ลบข้อมูลบน EEPROM หมดแล้ว\nกำลังรีบูทอุปกรณ์ใหม่");
+  ESP.restart();
+}
+
+void reboot()
+{
+  server.send(200, "text/plain", "กำลังรีบูทอุปกรณ์ใหม่");
+  ESP.restart();
 }
