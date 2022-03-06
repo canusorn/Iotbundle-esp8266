@@ -43,9 +43,6 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define NUMBER_LEN 32
 
 #define CONFIG_VERSION "0.0.2"
-#define CONFIG_PIN D5
-//#define IOTWEBCONF_CONFIG_USE_MDNS 80
-//#define STATUS_PIN LED_BUILTIN
 
 // -- Method declarations.
 void handleRoot();
@@ -102,12 +99,28 @@ void setup()
   oled.print(" IoTbundle");
   oled.display();
 
+  // for clear eeprom jump D5 to GND
+  pinMode(D5, INPUT_PULLUP);
+  if (digitalRead(D5) == false)
+  {
+    delay(1000);
+    if (digitalRead(D5) == false)
+    {
+      oled.clear(PAGE);
+      oled.setCursor(0, 0);
+      oled.print("Clear All data\n rebooting");
+      oled.display();
+      delay(1000);
+      clearEEPROM();
+    }
+  }
+
   login.addItem(&emailParam);
   login.addItem(&passParam);
   login.addItem(&serverParam);
 
   //  iotWebConf.setStatusPin(STATUS_PIN);
-  iotWebConf.setConfigPin(CONFIG_PIN);
+  // iotWebConf.setConfigPin(CONFIG_PIN);
   //  iotWebConf.addSystemParameter(&stringParam);
   iotWebConf.addParameterGroup(&login);
   iotWebConf.setConfigSavedCallback(&configSaved);
@@ -381,8 +394,9 @@ void handleRoot()
   }
   String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
   s += "<title>Iotkiddie AC Powermeter config</title>";
-  if (iotWebConf.getState() == iotwebconf::NotConfigured) s+="<script>\nlocation.href='/config';\n</script>";
-  s+="</head><body>IoTkiddie config data";
+  if (iotWebConf.getState() == iotwebconf::NotConfigured)
+    s += "<script>\nlocation.href='/config';\n</script>";
+  s += "</head><body>IoTkiddie config data";
   s += "<ul>";
   s += "<li>Device name : ";
   s += String(iotWebConf.getThingName());
@@ -397,7 +411,7 @@ void handleRoot()
   s += "<li>Server : ";
   s += serverParamValue;
   s += "</ul>";
-  s +=  "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
+  s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
   s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
   s += "</body></html>\n";
 
@@ -455,12 +469,14 @@ void clearEEPROM()
   }
 
   EEPROM.end();
-  server.send(200, "text/plain", "ลบข้อมูลบน EEPROM หมดแล้ว\nกำลังรีบูทอุปกรณ์ใหม่");
+  server.send(200, "text/plain", "Clear all data\nrebooting");
+  delay(1000);
   ESP.restart();
 }
 
 void reboot()
 {
-  server.send(200, "text/plain", "กำลังรีบูทอุปกรณ์ใหม่");
+  server.send(200, "text/plain", "rebooting");
+  delay(1000);
   ESP.restart();
 }
