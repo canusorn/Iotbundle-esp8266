@@ -257,7 +257,7 @@ void displayValue()
   {
     oled.clear(PAGE);
     oled.setCursor(0, 0);
-    oled.printf("Please\n\nConnect\n\nPZEM004T");
+    oled.printf("-Sensor-\n\nno sensor\ndetect!");
   }
 
   // display status
