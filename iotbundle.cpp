@@ -442,7 +442,7 @@ void Iotbundle::pmMeter()
     clearvar();
 }
 
-void Iotbundle::pmMeter()
+void Iotbundle::DHT()
 {
   // calculate
   float humid = var_sum[0] / var_index;
