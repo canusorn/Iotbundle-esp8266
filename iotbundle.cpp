@@ -456,9 +456,9 @@ void Iotbundle::DHT()
   url += "&esp_id=" + _esp_id;
   if (var_index)
   { // validate
-    if (humid >= 0 && humid <= 1999 && !isnan(humid))
+    if (humid >= 0 && humid <= 100 && !isnan(humid))
       url += "&humid=" + String(humid);
-    if (temp >= 0 && temp <= 1999 && !isnan(temp))
+    if (temp >= -40 && temp <= 80 && !isnan(temp))
       url += "&temp=" + String(temp);
   }
   if (newio_c)
