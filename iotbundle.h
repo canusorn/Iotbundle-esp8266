@@ -53,8 +53,11 @@ private:
   // handle data acmeter'project
   void acMeter();
 
-  // handle data acmeter'project
+  // handle data pmmeter'project
   void pmMeter();
+
+  // handle data DHT'project
+  void DHT();
 
 public:
   Iotbundle(String project);
