@@ -1,6 +1,5 @@
 #include <ESP8266WiFi.h>
 #include <DHT.h>
-#include <SoftwareSerial.h>
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
