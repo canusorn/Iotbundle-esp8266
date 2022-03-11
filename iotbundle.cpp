@@ -457,9 +457,9 @@ void Iotbundle::DHT()
   if (var_index)
   { // validate
     if (humid >= 0 && humid <= 100 && !isnan(humid))
-      url += "&humid=" + String(humid);
+      url += "&humid=" + String(humid,1);
     if (temp >= -40 && temp <= 80 && !isnan(temp))
-      url += "&temp=" + String(temp);
+      url += "&temp=" + String(temp,1);
   }
   if (newio_c)
     url += "&io_c=" + String(io);

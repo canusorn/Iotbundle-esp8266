@@ -156,7 +156,7 @@ void display_update(float humid, float temp)
     oled.clear(PAGE);
     oled.setFontType(0);
     oled.setCursor(0, 0);
-    oled.println("--DHT--\n\nH: " + String(humid) + " %\nT: " + String(temp) + " C");
+    oled.println("--DHT--\n\nH: " + String(humid,1) + " %\nT: " + String(temp,1) + " C");
     oled.display();
 
     // display data in serialmonitor
