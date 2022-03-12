@@ -135,7 +135,7 @@ void loop()
 
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= 2000)
-    { // run every 1 second
+    { // run every 2 second
         previousMillis = currentMillis;
         //------get data from DHT------
         float humid = dht.readHumidity();
@@ -156,7 +156,7 @@ void display_update(float humid, float temp)
     oled.clear(PAGE);
     oled.setFontType(0);
     oled.setCursor(0, 0);
-    oled.println("--DHT--\n\nH: " + String(humid,1) + " %\nT: " + String(temp,1) + " C");
+    oled.println("--DHT--\n\nH: " + String(humid,1) + " %\n\nT: " + String(temp,1) + " C");
     oled.display();
 
     // display data in serialmonitor

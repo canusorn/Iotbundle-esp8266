@@ -59,6 +59,9 @@ private:
   // handle data DHT'project
   void DHT();
 
+  // handle data smartFarmSolar'project
+  void smartFarmSolar();
+
 public:
   Iotbundle(String project);
 

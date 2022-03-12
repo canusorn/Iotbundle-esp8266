@@ -3,16 +3,20 @@
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
-#define PROJECT "DHT"
+#define PROJECT "smartfarm_solar"
 Iotbundle iot(PROJECT);
 
 // 1.1.ใส่ข้อมูลไวไฟ
-const char *ssid = "wifi_ssid";
-const char *password = "wifi_pass";
+// const char *ssid = "wifi_ssid";
+// const char *password = "wifi_pass";
+const char *ssid = "G6PD_2.4G";
+const char *password = "570610193";
 
 // 1.2.ใส่ข้อมูล user ที่สมัครกับเว็บ iotkiddie.com
-String email = "test@iotkiddie.com";
-String pass = "12345678";
+// String email = "test@iotkiddie.com";
+// String pass = "12345678";
+String email = "anusorn1998@gmail.com";
+String pass = "vo6liIN";
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!
@@ -52,13 +56,14 @@ void loop()
         //------get data from DHT------
         float humid = dht.readHumidity();
         float temp = dht.readTemperature();
+        uint16_t vbatt = analogRead(A0) * 6200 / 1024; //Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
 
         // display data in serialmonitor
-        Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C ");
+        Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C Vbatt: " + String(vbatt) + " mv");
 
         /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
             ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
-        iot.update(humid, temp);
+        iot.update(humid, temp, vbatt);
     }
 }

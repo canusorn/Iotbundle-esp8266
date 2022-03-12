@@ -20,6 +20,12 @@ Iotbundle::Iotbundle(String project)
   else if (project == "DHT")
   {
     this->_project_id = 4;
+    _AllowIO = 0b101111001;
+  }
+  else if (project == "smartfarm_solar")
+  {
+    this->_project_id = 5;
+    _AllowIO = 0b101100110;
   }
 
   // set all allow pin to low
@@ -89,6 +95,13 @@ void Iotbundle::handle()
           if (!newio_s)
             readio();
           DHT();
+        }
+        else if (_project_id == 5)
+        {
+          DEBUGLN("sending data to server");
+          if (!newio_s)
+            readio();
+          smartFarmSolar();
         }
       }
       else
@@ -457,9 +470,62 @@ void Iotbundle::DHT()
   if (var_index)
   { // validate
     if (humid >= 0 && humid <= 100 && !isnan(humid))
-      url += "&humid=" + String(humid,1);
+      url += "&humid=" + String(humid, 1);
     if (temp >= -40 && temp <= 80 && !isnan(temp))
-      url += "&temp=" + String(temp,1);
+      url += "&temp=" + String(temp, 1);
+  }
+  if (newio_c)
+    url += "&io_c=" + String(io);
+  else if (newio_s)
+    url += "&io_s=" + String(io);
+
+  String payload = getDataSSL(url);
+
+  if (payload != "")
+  {
+    int16_t newio = Stringparse(payload);
+    if (newio == 32767) // io from server updated
+    {
+      newio_s = false;
+    }
+    else if (newio == 32766) // io from client updated
+    {
+      newio_s = false;
+      newio_c = false;
+    }
+    else if (newio >= 0)
+    {
+      io = newio;
+      iohandle_s();
+      newio_s = true;
+    }
+  }
+
+  if (serverConnected)
+    clearvar();
+}
+
+void Iotbundle::smartFarmSolar()
+{
+  // calculate
+  float humid = var_sum[0] / var_index;
+  float temp = var_sum[1] / var_index;
+  uint16_t vbatt = var_sum[2] / var_index;
+
+  // create string
+  String url = this->_server + "/api/";
+  url += String(_project_id);
+  url += "/update.php";
+  url += "?user_id=" + String(_user_id);
+  url += "&esp_id=" + _esp_id;
+  if (var_index)
+  { // validate
+    if (humid >= 0 && humid <= 100 && !isnan(humid))
+      url += "&humid=" + String(humid, 1);
+    if (temp >= -40 && temp <= 80 && !isnan(temp))
+      url += "&temp=" + String(temp, 1);
+    if (vbatt >= 0 && temp <= 9999 && !isnan(vbatt))
+      url += "&vbatt=" + String(vbatt);
   }
   if (newio_c)
     url += "&io_c=" + String(io);
