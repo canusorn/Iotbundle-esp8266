@@ -60,8 +60,8 @@ void setup()
 
     // go to deep sleep if low battery
     uint16_t vbatt = analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
-                                                   // if (vbatt <= 3900 && vbatt >= 1000) // if <= 1000 is no battery
-    if (vbatt <= 3900)
+                                                   if (vbatt <= 3900 && vbatt >= 1000) // if <= 1000 is no battery
+    // if (vbatt <= 3900)
     {
         pinMode(D4, OUTPUT);
         digitalWrite(D4, LOW);
@@ -148,8 +148,8 @@ void loop()
         Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C Vbatt: " + String(vbatt) + " mv");
 
         // go to deep sleep if low battery
-        // if (vbatt <= 3850 && vbatt >= 1000) // if <= 1000 is no battery
-        if (vbatt <= 3850)
+        if (vbatt <= 3850 && vbatt >= 1000) // if <= 1000 is no battery
+        // if (vbatt <= 3850)
         {
             pinMode(D4, OUTPUT);
             digitalWrite(D4, LOW);
