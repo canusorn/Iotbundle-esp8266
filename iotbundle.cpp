@@ -527,6 +527,8 @@ void Iotbundle::smartFarmSolar()
     if (vbatt >= 0 && temp <= 9999 && !isnan(vbatt))
       url += "&vbatt=" + String(vbatt);
   }
+  url += "&valve=";  
+  url += (digitalRead(D1)) ? "1" : "0";
   if (newio_c)
     url += "&io_c=" + String(io);
   else if (newio_s)

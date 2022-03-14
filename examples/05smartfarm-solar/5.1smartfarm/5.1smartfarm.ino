@@ -7,16 +7,12 @@
 Iotbundle iot(PROJECT);
 
 // 1.1.ใส่ข้อมูลไวไฟ
-// const char *ssid = "wifi_ssid";
-// const char *password = "wifi_pass";
-const char *ssid = "G6PD_2.4G";
-const char *password = "570610193";
+const char *ssid = "wifi_ssid";
+const char *password = "wifi_pass";
 
 // 1.2.ใส่ข้อมูล user ที่สมัครกับเว็บ iotkiddie.com
-// String email = "test@iotkiddie.com";
-// String pass = "12345678";
-String email = "anusorn1998@gmail.com";
-String pass = "vo6liIN";
+String email = "test@iotkiddie.com";
+String pass = "12345678";
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!

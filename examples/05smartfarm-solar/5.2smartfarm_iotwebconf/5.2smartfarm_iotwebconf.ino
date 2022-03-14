@@ -37,6 +37,8 @@ bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper);
 DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long previousMillis = 0;
+uint8_t dhtSample;
+uint16_t vbatt;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -58,9 +60,13 @@ void setup()
 {
     Serial.begin(115200);
 
+    // set low on boot
+    digitalWrite(D1, LOW);
+    pinMode(D1, OUTPUT);
+
     // go to deep sleep if low battery
     uint16_t vbatt = analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
-                                                   if (vbatt <= 3900 && vbatt >= 1000) // if <= 1000 is no battery
+    if (vbatt <= 3900 && vbatt >= 1000)            // if <= 1000 is no battery
     // if (vbatt <= 3900)
     {
         pinMode(D4, OUTPUT);
@@ -136,35 +142,50 @@ void loop()
     MDNS.update();
 
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= 2000)
+    if (currentMillis - previousMillis >= 1000)
     { // run every 2 second
         previousMillis = currentMillis;
-        //------get data from DHT------
-        float humid = dht.readHumidity();
-        float temp = dht.readTemperature();
-        uint16_t vbatt = analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
 
-        // display data in serialmonitor
-        Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C Vbatt: " + String(vbatt) + " mv");
+        vbatt += analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
+        dhtSample++;
 
-        // go to deep sleep if low battery
-        if (vbatt <= 3850 && vbatt >= 1000) // if <= 1000 is no battery
-        // if (vbatt <= 3850)
+        if (dhtSample >= 2)
         {
-            pinMode(D4, OUTPUT);
-            digitalWrite(D4, LOW);
-            delay(2000);
-            digitalWrite(D4, HIGH);
-            delay(200);
-            digitalWrite(D4, LOW);
-            delay(2000);
-            ESP.deepSleep(30 * 60e6); // sleep for 30 minutes
+            vbatt = vbatt / dhtSample;
+            updateDHT();
+
+            dhtSample = 0;
+            vbatt = 0;
         }
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-            ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
-            ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
-        iot.update(humid, temp, vbatt);
     }
+}
+
+void updateDHT()
+{
+    //------get data from DHT------
+    float humid = dht.readHumidity();
+    float temp = dht.readTemperature();
+
+    // display data in serialmonitor
+    Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C Vbatt: " + String(vbatt) + " mv");
+
+    // go to deep sleep if low battery
+    if (vbatt <= 3850 && vbatt >= 1000) // if <= 1000 is no battery
+    // if (vbatt <= 3850)
+    {
+        pinMode(D4, OUTPUT);
+        digitalWrite(D4, LOW);
+        delay(2000);
+        digitalWrite(D4, HIGH);
+        delay(200);
+        digitalWrite(D4, LOW);
+        delay(2000);
+        ESP.deepSleep(30 * 60e6); // sleep for 30 minutes
+    }
+    /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+        ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
+        ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
+    iot.update(humid, temp, vbatt);
 }
 
 void handleRoot()
