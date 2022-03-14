@@ -38,8 +38,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long previousMillis = 0;
 uint8_t dhtSample;
-uint16_t vbatt;
-uint32_t valveOnTime;
+uint16_t vbatt,valveOnTime;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -151,7 +150,7 @@ void loop()
         if (digitalRead(D1))
         {
             valveOnTime++;
-            if (valveOnTime >= 30 * 60 * 1000)
+            if (valveOnTime >= 30 * 60)
                 digitalWrite(D1, LOW);
         }
         else
