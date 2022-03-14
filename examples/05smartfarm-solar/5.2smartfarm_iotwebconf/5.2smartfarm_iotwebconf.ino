@@ -39,6 +39,7 @@ DHT dht(DHTPIN, DHTTYPE);
 unsigned long previousMillis = 0;
 uint8_t dhtSample;
 uint16_t vbatt;
+uint32_t valveOnTime;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -145,6 +146,16 @@ void loop()
     if (currentMillis - previousMillis >= 1000)
     { // run every 2 second
         previousMillis = currentMillis;
+
+        // protection on valve
+        if (digitalRead(D1))
+        {
+            valveOnTime++;
+            if (valveOnTime >= 30 * 60 * 1000)
+                digitalWrite(D1, LOW);
+        }
+        else
+            valveOnTime = 0;
 
         vbatt += analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
         dhtSample++;
