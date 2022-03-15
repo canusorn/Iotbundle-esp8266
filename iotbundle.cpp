@@ -520,11 +520,11 @@ void Iotbundle::smartFarmSolar()
   url += "&esp_id=" + _esp_id;
   if (var_index)
   { // validate
-    if (humid >= 0 && humid <= 100 && !isnan(humid))
+    if (humid > 0 && humid <= 100 && !isnan(humid))
       url += "&humid=" + String(humid, 1);
-    if (temp >= -40 && temp <= 80 && !isnan(temp))
+    if (temp > 0 && temp <= 80 && !isnan(temp))
       url += "&temp=" + String(temp, 1);
-    if (vbatt >= 0 && temp <= 9999 && !isnan(vbatt))
+    if (vbatt >= 2000 && vbatt <= 8000 && !isnan(vbatt))
       url += "&vbatt=" + String(vbatt);
   }
   url += "&valve=";  
