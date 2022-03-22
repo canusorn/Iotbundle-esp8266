@@ -139,6 +139,7 @@ void setup()
     server.onNotFound([]()
                       { iotWebConf.handleNotFound(); });
 
+    Serial.println("ESPID: " + String(ESP.getChipId()));
     Serial.println("Ready.");
 }
 
@@ -185,7 +186,7 @@ void display_update(float humid, float temp)
         oled.clear(PAGE);
         oled.setFontType(0);
         oled.setCursor(0, 0);
-        oled.println("--DHT--\n\nH: " + String(humid,1) + " %\n\nT: " + String(temp,1) + " C");
+        oled.println("--DHT--\n\nH: " + String(humid, 1) + " %\n\nT: " + String(temp, 1) + " C");
 
         // display data in serialmonitor
         Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C ");
@@ -289,97 +290,96 @@ void display_update(float humid, float temp)
     oled.display();
 }
 
-
 void handleRoot()
 {
-  // -- Let IotWebConf test and handle captive portal requests.
-  if (iotWebConf.handleCaptivePortal())
-  {
-    // -- Captive portal request were already served.
-    return;
-  }
-  String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
-  s += "<title>Iotkiddie AC Powermeter config</title></head><body>IoTkiddie config data";
-  s += "<ul>";
-  s += "<li>Device name : ";
-  s += String(iotWebConf.getThingName());
-  s += "<li>อีเมลล์ : ";
-  s += emailParamValue;
-  s += "<li>WIFI SSID : ";
-  s += String(iotWebConf.getSSID());
-  s += "<li>RSSI : ";
-  s += String(WiFi.RSSI()) + " dBm";
-  s += "<li>ESP ID : ";
-  s += ESP.getChipId();
-  s += "<li>Server : ";
-  s += serverParamValue;
-  s += "</ul>";
-  s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
-  s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
-  s += "</body></html>\n";
+    // -- Let IotWebConf test and handle captive portal requests.
+    if (iotWebConf.handleCaptivePortal())
+    {
+        // -- Captive portal request were already served.
+        return;
+    }
+    String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
+    s += "<title>Iotkiddie AC Powermeter config</title></head><body>IoTkiddie config data";
+    s += "<ul>";
+    s += "<li>Device name : ";
+    s += String(iotWebConf.getThingName());
+    s += "<li>อีเมลล์ : ";
+    s += emailParamValue;
+    s += "<li>WIFI SSID : ";
+    s += String(iotWebConf.getSSID());
+    s += "<li>RSSI : ";
+    s += String(WiFi.RSSI()) + " dBm";
+    s += "<li>ESP ID : ";
+    s += ESP.getChipId();
+    s += "<li>Server : ";
+    s += serverParamValue;
+    s += "</ul>";
+    s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
+    s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
+    s += "</body></html>\n";
 
-  server.send(200, "text/html", s);
+    server.send(200, "text/html", s);
 }
 
 void configSaved()
 {
-  Serial.println("Configuration was updated.");
+    Serial.println("Configuration was updated.");
 }
 
 void wifiConnected()
 {
 
-  Serial.println("WiFi was connected.");
-  MDNS.begin(iotWebConf.getThingName());
-  MDNS.addService("http", "tcp", 80);
+    Serial.println("WiFi was connected.");
+    MDNS.begin(iotWebConf.getThingName());
+    MDNS.addService("http", "tcp", 80);
 
-  Serial.printf("Ready! Open http://%s.local in your browser\n", String(iotWebConf.getThingName()));
-  if ((String)emailParamValue != "" && (String)passParamValue != "")
-  {
-    Serial.println("login");
+    Serial.printf("Ready! Open http://%s.local in your browser\n", String(iotWebConf.getThingName()));
+    if ((String)emailParamValue != "" && (String)passParamValue != "")
+    {
+        Serial.println("login");
 
-    // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-    if ((String)passParamValue != "")
-      iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
-    else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
-      iot.begin((String)emailParamValue, (String)passParamValue);
-  }
+        // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
+        if ((String)passParamValue != "")
+            iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
+        else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
+            iot.begin((String)emailParamValue, (String)passParamValue);
+    }
 }
 
 bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
 {
-  Serial.println("Validating form.");
-  bool valid = true;
+    Serial.println("Validating form.");
+    bool valid = true;
 
-  /*
-    int l = webRequestWrapper->arg(stringParam.getId()).length();
-    if (l < 3)
-    {
-      stringParam.errorMessage = "Please provide at least 3 characters for this test!";
-      valid = false;
-    }
-  */
-  return valid;
+    /*
+      int l = webRequestWrapper->arg(stringParam.getId()).length();
+      if (l < 3)
+      {
+        stringParam.errorMessage = "Please provide at least 3 characters for this test!";
+        valid = false;
+      }
+    */
+    return valid;
 }
 
 void clearEEPROM()
 {
-  EEPROM.begin(512);
-  // write a 0 to all 512 bytes of the EEPROM
-  for (int i = 0; i < 512; i++)
-  {
-    EEPROM.write(i, 0);
-  }
+    EEPROM.begin(512);
+    // write a 0 to all 512 bytes of the EEPROM
+    for (int i = 0; i < 512; i++)
+    {
+        EEPROM.write(i, 0);
+    }
 
-  EEPROM.end();
-  server.send(200, "text/plain", "Clear all data\nrebooting");
-  delay(1000);
-  ESP.restart();
+    EEPROM.end();
+    server.send(200, "text/plain", "Clear all data\nrebooting");
+    delay(1000);
+    ESP.restart();
 }
 
 void reboot()
 {
-  server.send(200, "text/plain", "rebooting");
-  delay(1000);
-  ESP.restart();
+    server.send(200, "text/plain", "rebooting");
+    delay(1000);
+    ESP.restart();
 }

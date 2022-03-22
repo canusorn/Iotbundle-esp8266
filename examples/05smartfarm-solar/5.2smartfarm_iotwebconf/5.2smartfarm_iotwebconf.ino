@@ -132,6 +132,7 @@ void setup()
     server.onNotFound([]()
                       { iotWebConf.handleNotFound(); });
 
+    Serial.println("ESPID: " + String(ESP.getChipId()));
     Serial.println("Ready.");
 }
 
