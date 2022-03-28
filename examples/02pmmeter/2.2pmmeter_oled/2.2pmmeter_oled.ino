@@ -153,9 +153,9 @@ void loop()
         previousMillis = currentMillis;
     }
 
-    //------No response from PMS7003 in 2 second------
+    //------No response from PMS7003 in 5 second------
     currentMillis = millis();
-    if (currentMillis - previousMillis >= 2000)
+    if (currentMillis - previousMillis >= 5000)
     {
         previousMillis = currentMillis;
         oled.clear(PAGE);

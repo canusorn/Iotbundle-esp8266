@@ -141,6 +141,7 @@ void Iotbundle::update(float var1, float var2, float var3, float var4, float var
       DEBUG(String(var_sum[i]) + ", ");
     }
     DEBUGLN();
+    DEBUGLN("FreeHeap : " + String(ESP.getFreeHeap()));
   }
 }
 

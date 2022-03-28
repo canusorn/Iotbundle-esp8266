@@ -49,7 +49,7 @@ PMS::DATA data;
 #define DC_JUMPER 0
 MicroOLED oled(PIN_RESET, DC_JUMPER);
 
-unsigned long previousMillis = 0, currentMillis = 0;
+unsigned long previousMillis = 0;
 bool sensordetect = true;
 
 DNSServer dnsServer;
@@ -163,54 +163,23 @@ void loop()
   //------get data from PMS7003------
   if (pms.read(data))
   {
-    display_update();
     sensordetect = true;
     /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
         ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
     iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
-    previousMillis = currentMillis;
   }
 
-  //------No response from PMS7003 in 2 second------
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= 2000)
-  {
-    sensordetect = false;
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= 1000)
+  { // run every 1 second
     previousMillis = currentMillis;
-    display_update();
+    display_update(); // update OLED
   }
 }
 
 void display_update()
 {
-  //------Update OLED------
-  if (sensordetect)
-  {
-    oled.clear(PAGE);
-    oled.setFontType(0);
-    oled.setCursor(0, 0);
-    oled.println("PM [ug/m3]");
-    oled.setCursor(0, 15);
-    oled.print(" 1.0 : ");
-    oled.print(data.PM_AE_UG_1_0);
-    oled.setCursor(0, 26);
-    oled.print(" 2.5 : ");
-    oled.print(data.PM_AE_UG_2_5);
-    oled.setCursor(0, 37);
-    oled.print("10.0 : ");
-    oled.print(data.PM_AE_UG_10_0);
-  }
-
-  // if no data from sensor
-  else
-  {
-    oled.clear(PAGE);
-    oled.setFontType(0);
-    oled.setCursor(0, 0);
-    oled.printf("-Sensor-\n\nno sensor\ndetect!");
-  }
-
   // display status
   iotwebconf::NetworkState curr_state = iotWebConf.getState();
   if (curr_state == iotwebconf::Boot)
@@ -244,7 +213,7 @@ void display_update()
     {
       displaytime = 10;
       prev_state = curr_state;
-      noti = "-State-\n\nX  wifi\ndisconnect\ngo AP Mode";
+      noti = "-State-\n\nX wifi\ndisconnect\ngo AP Mode";
     }
   }
   else if (curr_state == iotwebconf::Connecting)
@@ -279,6 +248,32 @@ void display_update()
     oled.setCursor(0, 0);
     oled.print(noti);
     Serial.println(noti);
+  }
+  //------Update OLED------
+  else if (sensordetect)
+  {
+    oled.clear(PAGE);
+    oled.setFontType(0);
+    oled.setCursor(0, 0);
+    oled.println("PM(ug/m3)");
+    oled.setCursor(0, 15);
+    oled.print(" 1.0 : ");
+    oled.print(data.PM_AE_UG_1_0);
+    oled.setCursor(0, 26);
+    oled.print(" 2.5 : ");
+    oled.print(data.PM_AE_UG_2_5);
+    oled.setCursor(0, 37);
+    oled.print("10.0 : ");
+    oled.print(data.PM_AE_UG_10_0);
+  }
+
+  // if no data from sensor
+  else
+  {
+    oled.clear(PAGE);
+    oled.setFontType(0);
+    oled.setCursor(0, 0);
+    oled.printf("-Sensor-\n\nno sensor\ndetect!");
   }
 
   // display state
