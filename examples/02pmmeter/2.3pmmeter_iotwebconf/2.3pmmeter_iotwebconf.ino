@@ -175,6 +175,7 @@ void loop()
   { // run every 1 second
     previousMillis = currentMillis;
     display_update(); // update OLED
+    sensordetect=false;
   }
 }
 
@@ -266,7 +267,6 @@ void display_update()
     oled.print("10.0 : ");
     oled.print(data.PM_AE_UG_10_0);
   }
-
   // if no data from sensor
   else
   {
