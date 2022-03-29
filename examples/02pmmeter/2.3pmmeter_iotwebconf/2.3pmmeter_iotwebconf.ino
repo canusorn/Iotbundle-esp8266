@@ -50,7 +50,7 @@ PMS::DATA data;
 MicroOLED oled(PIN_RESET, DC_JUMPER);
 
 unsigned long previousMillis = 0;
-bool sensordetect = true;
+uint8_t sensordetect;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -163,7 +163,7 @@ void loop()
   //------get data from PMS7003------
   if (pms.read(data))
   {
-    sensordetect = true;
+    sensordetect = 0;
     /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
         ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
@@ -175,7 +175,7 @@ void loop()
   { // run every 1 second
     previousMillis = currentMillis;
     display_update(); // update OLED
-    sensordetect=false;
+    sensordetect++;
   }
 }
 
@@ -251,7 +251,7 @@ void display_update()
     Serial.println(noti);
   }
   //------Update OLED------
-  else if (sensordetect)
+  else if (sensordetect<=5)
   {
     oled.clear(PAGE);
     oled.setFontType(0);
