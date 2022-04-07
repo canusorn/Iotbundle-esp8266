@@ -195,7 +195,7 @@ void loop()
                 delay(50);
             }
             vbatt /= 20;
-            if ((!digitalRead(D1) && vbatt < 3900) || (digitalRead(D1) && vbatt < 3600))
+            if ((!digitalRead(D1) && vbatt < 3900) || (digitalRead(D1) && vbatt < 3500))
             {
                 pinMode(D4, OUTPUT);
                 digitalWrite(D4, LOW);
