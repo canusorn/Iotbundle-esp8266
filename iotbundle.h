@@ -28,7 +28,7 @@ private:
   uint32_t _previousMillis;
   uint8_t sendtime = 5;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
-  bool newio_s = true, newio_c = false; // flag new io from server,clients has change
+  bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
   uint16_t _AllowIO;                    // pin to allow to write
 
