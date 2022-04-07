@@ -188,6 +188,13 @@ void loop()
         if (vbatt <= 3900 && vbatt >= 1000) // if <= 1000 is no battery
         // if (vbatt <= 3850)
         {
+
+            if (digitalRead(D1) && vbatt < 3600)
+            {
+                digitalWrite(D1, LOW);
+                delay(100);
+            }
+
             vbatt = 0;
             for (int i = 0; i < 20; i++)
             {
@@ -195,8 +202,10 @@ void loop()
                 delay(50);
             }
             vbatt /= 20;
-            if ((!digitalRead(D1) && vbatt < 3900) || (digitalRead(D1) && vbatt < 3500))
+            if ((!digitalRead(D1) && vbatt < 3900) || (digitalRead(D1) && vbatt < 3600))
             {
+                iot.fouceUpdate(true); // update before sleep
+
                 pinMode(D4, OUTPUT);
                 digitalWrite(D4, LOW);
                 delay(2000);

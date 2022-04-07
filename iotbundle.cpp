@@ -119,6 +119,43 @@ void Iotbundle::handle()
   }
 }
 
+void Iotbundle::fouceUpdate(bool settolowall)
+{
+  if (this->_email && this->_server != "")
+  {
+    if (_user_id > 0)
+    {
+
+      if (settolowall)
+      { // set all pin to low for poweroff or sleep
+        io = 0b000000000;
+        newio_c = true;
+      }
+
+      if (_project_id == 1)
+      {
+        DEBUGLN("fouce sending data to server");
+        acMeter();
+      }
+      else if (_project_id == 2)
+      {
+        DEBUGLN("fouce sending data to server");
+        pmMeter();
+      }
+      else if (_project_id == 4)
+      {
+        DEBUGLN("fouce sending data to server");
+        DHT();
+      }
+      else if (_project_id == 5)
+      {
+        DEBUGLN("fouce sending data to server");
+        smartFarmSolar();
+      }
+    }
+  }
+}
+
 void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
   if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan

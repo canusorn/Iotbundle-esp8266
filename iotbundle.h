@@ -82,6 +82,9 @@ public:
 
   // set allow io pin
   void setAllowIO(uint16_t allowio);
+
+  // fouce update data
+  void fouceUpdate(bool settolowall=false);
 };
 
 // for set debug mode
