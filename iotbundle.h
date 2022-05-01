@@ -10,7 +10,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
-// #define IOTBUNDLE_DEBUG
+#define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 
 class Iotbundle
@@ -67,6 +67,9 @@ public:
 
   // flag connect to server
   bool serverConnected;
+
+  // error masage from server
+  String noti;
 
   // connect and login
   void begin(String email, String pass, String server = "https://iotkiddie.com");

@@ -253,6 +253,13 @@ void display_update(float humid, float temp)
         }
     }
 
+  if (iot.noti != "" && displaytime == 0)
+  {
+    displaytime = 5;
+    noti = iot.noti;
+    iot.noti = "";
+  }
+
     if (displaytime)
     {
         displaytime--;

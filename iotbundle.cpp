@@ -58,11 +58,17 @@ void Iotbundle::begin(String email, String pass, String server)
 
   if (payload.toInt() > 0)
   {
+    this->serverConnected=true;
     _user_id = payload.toInt();
     DEBUGLN("get user_id : " + String(_user_id));
+    this->noti = "-Login-\nlogin success";
   }
   else
-    DEBUGLN("can't login");
+  {
+    this->serverConnected=false;
+    this->noti = "-!Login-\n" + payload;
+    DEBUGLN(payload);
+  }
 }
 
 void Iotbundle::handle()
