@@ -58,11 +58,17 @@ void Iotbundle::begin(String email, String pass, String server)
 
   if (payload.toInt() > 0)
   {
+    this->serverConnected=true;
     _user_id = payload.toInt();
     DEBUGLN("get user_id : " + String(_user_id));
+    this->noti = "-Login-\nlogin success";
   }
   else
-    DEBUGLN("can't login");
+  {
+    this->serverConnected=false;
+    this->noti = "-!Login-\n" + payload;
+    DEBUGLN(payload);
+  }
 }
 
 void Iotbundle::handle()
@@ -114,6 +120,43 @@ void Iotbundle::handle()
           DEBUGLN("retry login");
           begin(this->_email, this->_pass, this->_server);
         }
+      }
+    }
+  }
+}
+
+void Iotbundle::fouceUpdate(bool settolowall)
+{
+  if (this->_email && this->_server != "")
+  {
+    if (_user_id > 0)
+    {
+
+      if (settolowall)
+      { // set all pin to low for poweroff or sleep
+        io = 0b000000000;
+        newio_c = true;
+      }
+
+      if (_project_id == 1)
+      {
+        DEBUGLN("fouce sending data to server");
+        acMeter();
+      }
+      else if (_project_id == 2)
+      {
+        DEBUGLN("fouce sending data to server");
+        pmMeter();
+      }
+      else if (_project_id == 4)
+      {
+        DEBUGLN("fouce sending data to server");
+        DHT();
+      }
+      else if (_project_id == 5)
+      {
+        DEBUGLN("fouce sending data to server");
+        smartFarmSolar();
       }
     }
   }

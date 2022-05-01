@@ -42,7 +42,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.0.3"
+#define CONFIG_VERSION "0.0.4"
 
 // -- Method declarations.
 void handleRoot();
@@ -63,7 +63,7 @@ IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword, CON
 // -- You can also use namespace formats e.g.: iotwebconf::TextParameter
 IotWebConfParameterGroup login = IotWebConfParameterGroup("login", "ล็อกอิน(สมัครที่เว็บก่อนนะครับ)");
 
-IotWebConfTextParameter emailParam = IotWebConfTextParameter("อีเมลล์", "emailParam", emailParamValue, STRING_LEN);
+IotWebConfTextParameter emailParam = IotWebConfTextParameter("อีเมลล์ (ระวังห้ามใส่เว้นวรรค)", "emailParam", emailParamValue, STRING_LEN);
 IotWebConfPasswordParameter passParam = IotWebConfPasswordParameter("รหัสผ่าน", "passParam", passParamValue, STRING_LEN);
 IotWebConfTextParameter serverParam = IotWebConfTextParameter("เซิฟเวอร์", "serverParam", serverParamValue, STRING_LEN, "https://iotkiddie.com");
 
@@ -322,6 +322,13 @@ void displayValue()
     }
   }
 
+  if (iot.noti != "" && displaytime == 0)
+  {
+    displaytime = 5;
+    noti = iot.noti;
+    iot.noti = "";
+  }
+
   if (displaytime)
   {
     displaytime--;
@@ -449,14 +456,25 @@ bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
   Serial.println("Validating form.");
   bool valid = true;
 
-  /*
-    int l = webRequestWrapper->arg(stringParam.getId()).length();
-    if (l < 3)
-    {
-      stringParam.errorMessage = "Please provide at least 3 characters for this test!";
-      valid = false;
-    }
-  */
+  
+    int l = webRequestWrapper->arg(emailParam.getId()).length();
+    Serial.println("before");
+    Serial.print("emailparam.getid.legnth : ");Serial.println(l);
+    Serial.print("emailparamvalue : ");Serial.println(emailParamValue);
+    Serial.print("emailparamvalue : ");Serial.println(webRequestWrapper->arg(emailParam.getId()));
+
+webRequestWrapper->arg(emailParam.getId())='g';
+
+        Serial.println("after");
+    Serial.print("emailparam.getid.legnth : ");Serial.println(l);
+    Serial.print("emailparamvalue : ");Serial.println(emailParamValue);
+    Serial.print("emailparamvalue : ");Serial.println(webRequestWrapper->arg(emailParam.getId()));
+    // if (l < 3)
+    // {
+    //   emailParam.errorMessage = "Please provide at least 3 characters for this test!";
+    //   valid = false;
+    // }
+  
   return valid;
 }
 

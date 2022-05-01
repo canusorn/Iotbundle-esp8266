@@ -20,7 +20,7 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-#define CONFIG_VERSION "0.0.3"
+#define CONFIG_VERSION "0.0.4"
 
 // -- Method declarations.
 void handleRoot();
@@ -69,17 +69,26 @@ void setup()
 
     // go to deep sleep if low battery
     uint16_t vbatt = analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
-    if (vbatt <= 3900 && vbatt >= 1000)            // if <= 1000 is no battery
+    if (vbatt <= 4000 && vbatt >= 1000)            // if <= 1000 is no battery
     // if (vbatt <= 3900)
     {
-        pinMode(D4, OUTPUT);
-        digitalWrite(D4, LOW);
-        delay(2000);
-        digitalWrite(D4, HIGH);
-        delay(200);
-        digitalWrite(D4, LOW);
-        delay(2000);
-        ESP.deepSleep(30 * 60e6); // sleep for 30 minutes
+        vbatt = 0;
+        for (int i = 0; i < 20; i++)
+        {
+            vbatt += analogRead(A0) * 6200 / 1024;
+            delay(50);
+        }
+        if (vbatt /= 20 < 4000)
+        {
+            pinMode(D4, OUTPUT);
+            digitalWrite(D4, LOW);
+            delay(2000);
+            digitalWrite(D4, HIGH);
+            delay(200);
+            digitalWrite(D4, LOW);
+            delay(2000);
+            ESP.deepSleep(10 * 60e6); // sleep for 10 minutes
+        }
     }
 
     dht.begin();
@@ -176,17 +185,36 @@ void loop()
         Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C Vbatt: " + String(vbatt) + " mv");
 
         // go to deep sleep if low battery
-        if (vbatt <= 3850 && vbatt >= 1000) // if <= 1000 is no battery
+        if (vbatt <= 3900 && vbatt >= 1000) // if <= 1000 is no battery
         // if (vbatt <= 3850)
         {
-            pinMode(D4, OUTPUT);
-            digitalWrite(D4, LOW);
-            delay(2000);
-            digitalWrite(D4, HIGH);
-            delay(200);
-            digitalWrite(D4, LOW);
-            delay(2000);
-            ESP.deepSleep(30 * 60e6); // sleep for 30 minutes
+
+            if (digitalRead(D1) && vbatt < 3600)
+            {
+                digitalWrite(D1, LOW);
+                delay(100);
+            }
+
+            vbatt = 0;
+            for (int i = 0; i < 20; i++)
+            {
+                vbatt += analogRead(A0) * 6200 / 1024;
+                delay(50);
+            }
+            vbatt /= 20;
+            if ((!digitalRead(D1) && vbatt < 3900) || (digitalRead(D1) && vbatt < 3600))
+            {
+                iot.fouceUpdate(true); // update before sleep
+
+                pinMode(D4, OUTPUT);
+                digitalWrite(D4, LOW);
+                delay(2000);
+                digitalWrite(D4, HIGH);
+                delay(200);
+                digitalWrite(D4, LOW);
+                delay(2000);
+                ESP.deepSleep(10 * 60e6); // sleep for 10 minutes
+            }
         }
         /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
