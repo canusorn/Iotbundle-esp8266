@@ -42,7 +42,19 @@ void Iotbundle::begin(String email, String pass, String server)
   this->_server = server;
   if (this->_server == "")
     this->_server = "https://iotkiddie.com";
-  this->_email = email;
+
+  // delete spacebar from email
+  String _temp_email = email;
+  uint8_t e = _temp_email.length();
+  this->_email = "";
+  for (int i = 0; i < e; i++)
+  {
+    if (_temp_email[i] != ' ')
+    {
+      this->_email += _temp_email[i];
+    }
+  }
+  
   this->_pass = pass;
 
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
@@ -63,9 +75,6 @@ void Iotbundle::begin(String email, String pass, String server)
       v_int += version[i];
     }
   }
-
-  // uint8_t version_int = v_int.toInt();
-
   url += "&version=" + v_int;
   // DEBUGLN(url);
 
@@ -255,17 +264,11 @@ String Iotbundle::getDataSSL(String url)
 
         serverConnected = true;
       }
-      // else if (httpCode >= 400 && httpCode < 500)
-      // {
-      //   payload = https.getString();
-      //   serverConnected = false;
-      //   DEBUGLN(payload);
-      // }
       else
       {
         payload = "code " + String(httpCode);
         serverConnected = false;
-        DEBUGLN(payload);
+        DEBUGLN(https.getString());
       }
       // if (https.hasHeader("Location"))
       // { // if has redirect code

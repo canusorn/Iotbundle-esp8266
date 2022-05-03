@@ -203,8 +203,6 @@ void displayValue()
     pf = NAN;
   }
 
-  voltage=220;
-
   //------Update OLED display------
   oled.clear(PAGE);
   oled.setFontType(0);
