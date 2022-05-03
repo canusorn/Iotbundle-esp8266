@@ -10,8 +10,9 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
-// #define IOTBUNDLE_DEBUG
+#define IOTBUNDLE_DEBUG
 #define retryget_userid 30
+#define VERSION "0.0.5"
 
 class Iotbundle
 {
@@ -37,6 +38,11 @@ private:
 
   // get method with ssl
   String getDataSSL(String url);
+
+  String getHttp(String url);
+  String getHttps(String url);
+  String postHttp(String data);
+  String postHttps(String data);
 
   // handle io from server
   void iohandle_s();
@@ -71,6 +77,9 @@ public:
   // error masage from server
   String noti;
 
+  // version
+  String version = VERSION;
+
   // connect and login
   void begin(String email, String pass, String server = "https://iotkiddie.com");
 
@@ -87,7 +96,7 @@ public:
   void setAllowIO(uint16_t allowio);
 
   // fouce update data
-  void fouceUpdate(bool settolowall=false);
+  void fouceUpdate(bool settolowall = false);
 };
 
 // for set debug mode
