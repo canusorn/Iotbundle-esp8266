@@ -203,7 +203,12 @@ void displayValue()
     pf = NAN;
   }
 
-  voltage=220;
+  voltage = 220;
+  current = 1;
+  power = 220;
+  energy = 100;
+  frequency = 50;
+  pf = 0.2;
 
   //------Update OLED display------
   oled.clear(PAGE);

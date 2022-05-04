@@ -225,10 +225,9 @@ String Iotbundle::getData(String data)
 {
   String payload;
   if (_server[4] == 's')
-    payload = getHttps(data);
+    return getHttps(data);
   else
-    payload = getHttp(data);
-  return payload;
+    return getHttp(data);
 }
 
 String Iotbundle::postData(String data)
@@ -237,11 +236,71 @@ String Iotbundle::postData(String data)
 
 String Iotbundle::getHttp(String data)
 {
+
+  String payload;
+
+  WiFiClient client;
+
+  HTTPClient http;
+
+  DEBUG("[HTTP] begin...\n");
+
+  DEBUGLN(data);
+
+  if (http.begin(client, data))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    DEBUG("[HTTP] GET...\n");
+    // start connection and send HTTP header
+    int httpCode = http.GET();
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = http.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(http.getString());
+      }
+    }
+    else
+    {
+      DEBUGLN("[HTTP] GET... failed, error:" + http.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    http.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTP} Unable to connect\n");
+    serverConnected = false;
+  }
+  return payload;
 }
+
 String Iotbundle::getHttps(String data)
 {
   String payload;
-  String url = data;
 
   std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
@@ -252,14 +311,10 @@ String Iotbundle::getHttps(String data)
 
   DEBUG("[HTTPS] begin...\n");
 
-  DEBUGLN(url);
+  DEBUGLN(data);
 
-  // while (!(url == ""))
-  // {
-
-  if (https.begin(*client, url))
-  { // HTTP
-    // url = "";
+  if (https.begin(*client, data))
+  {
 
     // start timer
     uint32_t startGet = millis();
@@ -279,7 +334,6 @@ String Iotbundle::getHttps(String data)
       {
         payload = https.getString();
         DEBUGLN(payload);
-
         serverConnected = true;
       }
       else
@@ -288,11 +342,6 @@ String Iotbundle::getHttps(String data)
         serverConnected = false;
         DEBUGLN(https.getString());
       }
-      // if (https.hasHeader("Location"))
-      // { // if has redirect code
-      //   url = https.header("Location");
-      //   DEBUGLN(url);
-      // }
     }
     else
     {
