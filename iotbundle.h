@@ -40,8 +40,11 @@ private:
   String getData(String data);
   String postData(String data);
 
+  // data is url
   String getHttp(String data);
   String getHttps(String data);
+
+  // data is json
   String postHttp(String data);
   String postHttps(String data);
 

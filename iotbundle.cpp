@@ -232,6 +232,11 @@ String Iotbundle::getData(String data)
 
 String Iotbundle::postData(String data)
 {
+  String payload;
+  if (_server[4] == 's')
+    return postHttps(data);
+  else
+    return postHttp(data);
 }
 
 String Iotbundle::getHttp(String data)
@@ -358,18 +363,145 @@ String Iotbundle::getHttps(String data)
   }
   else
   {
-    DEBUGLN("[HTTPS} Unable to connect");
+    DEBUGLN("[HTTPS] Unable to connect");
     serverConnected = false;
   }
   // }
 
   return payload;
 }
+
 String Iotbundle::postHttp(String data)
 {
+  String payload;
+
+  WiFiClient client;
+  HTTPClient http;
+
+  String url = this->_server + "/api/";
+  url += String(_project_id);
+  url += "/update_v5.php";
+
+  DEBUG("[HTTP] begin...\n" + url);
+  // configure traged server and url
+  if (http.begin(client, url))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    http.addHeader("Content-Type", "application/json");
+
+    DEBUG("[HTTP] POST...\n");
+    // start connection and send HTTP header and body
+    int httpCode = http.POST("{\"hello\":\"world\"}");
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUG("[HTTP] POST... code: " + httpCode);
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = http.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(http.getString());
+      }
+    }
+    else
+    {
+      DEBUG("[HTTP] POST... failed, error: " + http.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    http.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTP} Unable to connect\n");
+    serverConnected = false;
+  }
+  return payload;
 }
+
 String Iotbundle::postHttps(String data)
 {
+  String payload;
+
+  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+  HTTPClient https;
+
+  String url = this->_server + "/api/";
+  url += String(_project_id);
+  url += "/update_v5.php";
+
+  DEBUGLN("[HTTPS] begin...\n" + url);
+  // configure traged server and url
+  if (https.begin(*client, url))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    https.addHeader("Content-Type", "application/json");
+
+    DEBUG("[HTTPS] POST...\n");
+    // start connection and send HTTP header and body
+    int httpCode = https.POST("{\"hello\":\"world\"}");
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUG("[HTTPS] POST... code: " + httpCode);
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = https.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(https.getString());
+      }
+    }
+    else
+    {
+      DEBUG("[HTTP] POST... failed, error: " + https.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    https.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTPS] Unable to connect\n");
+    serverConnected = false;
+  }
+  return payload;
 }
 
 bool Iotbundle::status()
@@ -519,7 +651,8 @@ void Iotbundle::acMeter()
   else if (newio_s)
     url += "&io_s=" + String(io);
 
-  String payload = getData(url);
+  // String payload = getData(url);
+  String payload = postData(url);
 
   if (payload != "")
   {
