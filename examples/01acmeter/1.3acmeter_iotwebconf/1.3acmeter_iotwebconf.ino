@@ -89,6 +89,7 @@ void setup()
   Serial.begin(115200);
   Wire.begin();
 
+  iot.addProject("DHT");
   //------Display LOGO at start------
   oled.begin();
   oled.clear(PAGE);
@@ -465,24 +466,6 @@ bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
   Serial.println("Validating form.");
   bool valid = true;
 
-  int l = webRequestWrapper->arg(emailParam.getId()).length();
-  Serial.println("before");
-  Serial.print("emailparam.getid.legnth : ");
-  Serial.println(l);
-  Serial.print("emailparamvalue : ");
-  Serial.println(emailParamValue);
-  Serial.print("emailparamvalue : ");
-  Serial.println(webRequestWrapper->arg(emailParam.getId()));
-
-  webRequestWrapper->arg(emailParam.getId()) = 'g';
-
-  Serial.println("after");
-  Serial.print("emailparam.getid.legnth : ");
-  Serial.println(l);
-  Serial.print("emailparamvalue : ");
-  Serial.println(emailParamValue);
-  Serial.print("emailparamvalue : ");
-  Serial.println(webRequestWrapper->arg(emailParam.getId()));
   // if (l < 3)
   // {
   //   emailParam.errorMessage = "Please provide at least 3 characters for this test!";

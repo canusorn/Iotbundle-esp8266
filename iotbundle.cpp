@@ -3,36 +3,42 @@
 Iotbundle::Iotbundle(String project)
 {
   // set project id
-  if (project == "AC_METER")
-  {
-    this->_project_id = 1;
-    _AllowIO = 0b111100001;
-  } // pin4,3=pzem  2,1=i2c
-  else if (project == "PM_METER")
-  {
-    this->_project_id = 2;
-    _AllowIO = 0b111100001;
-  }
-  else if (project == "DC_METER")
-  {
-    this->_project_id = 3;
-  }
-  else if (project == "DHT")
-  {
-    this->_project_id = 4;
-    _AllowIO = 0b101111001;
-  }
-  else if (project == "smartfarm_solar")
-  {
-    this->_project_id = 5;
-    _AllowIO = 0b101100110;
-  }
+  setProjectID(project, 0);
 
   // set all allow pin to low
   init_io();
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
+}
+
+void Iotbundle::setProjectID(String project, uint8_t array_project)
+{
+  // set project id
+  if (project == "AC_METER")
+  {
+    this->_project_id[array_project] = 1;
+    _AllowIO &= 0b111100001;
+  } // pin4,3=pzem  2,1=i2c
+  else if (project == "PM_METER")
+  {
+    this->_project_id[array_project] = 2;
+    _AllowIO &= 0b111100001;
+  }
+  else if (project == "DC_METER")
+  {
+    this->_project_id[array_project] = 3;
+  }
+  else if (project == "DHT")
+  {
+    this->_project_id[array_project] = 4;
+    _AllowIO &= 0b101111001;
+  }
+  else if (project == "smartfarm_solar")
+  {
+    this->_project_id[array_project] = 5;
+    _AllowIO &= 0b101100110;
+  }
 }
 
 void Iotbundle::begin(String email, String pass, String server)
@@ -63,7 +69,7 @@ void Iotbundle::begin(String email, String pass, String server)
   url += "?email=" + this->_email;
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
-  url += "&project_id=" + String(this->_project_id);
+  url += "&project_id=" + String(this->_project_id[0]);
 
   // add in v0.0.5
   String v_int = "";
@@ -95,6 +101,21 @@ void Iotbundle::begin(String email, String pass, String server)
   }
 }
 
+void Iotbundle::addProject(String project)
+{
+  uint8_t projectarray = projectCount();
+  setProjectID(project, projectarray);
+
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i])<0)
+    {
+      return;
+    }
+    DEBUGLN("project " + String(i + 1) + " : " + String(_project_id[i]));
+  }
+}
+
 void Iotbundle::handle()
 {
   uint32_t currentMillis = millis();
@@ -105,28 +126,28 @@ void Iotbundle::handle()
     {
       if (_user_id > 0)
       {
-        if (_project_id == 1)
+        if (_project_id[0] == 1)
         {
           DEBUGLN("sending data to server");
           if (!newio_s)
             readio();
           acMeter();
         }
-        else if (_project_id == 2)
+        else if (_project_id[0] == 2)
         {
           DEBUGLN("sending data to server");
           if (!newio_s)
             readio();
           pmMeter();
         }
-        else if (_project_id == 4)
+        else if (_project_id[0] == 4)
         {
           DEBUGLN("sending data to server");
           if (!newio_s)
             readio();
           DHT();
         }
-        else if (_project_id == 5)
+        else if (_project_id[0] == 5)
         {
           DEBUGLN("sending data to server");
           if (!newio_s)
@@ -149,6 +170,19 @@ void Iotbundle::handle()
   }
 }
 
+int8_t Iotbundle::projectCount()
+{
+  for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i])<0)
+    {
+      DEBUGLN(i);
+      return i;
+    }
+  }
+  return -1;
+}
+
 void Iotbundle::fouceUpdate(bool settolowall)
 {
   if (this->_email && this->_server != "")
@@ -162,22 +196,22 @@ void Iotbundle::fouceUpdate(bool settolowall)
         newio_c = true;
       }
 
-      if (_project_id == 1)
+      if (_project_id[0] == 1)
       {
         DEBUGLN("fouce sending data to server");
         acMeter();
       }
-      else if (_project_id == 2)
+      else if (_project_id[0] == 2)
       {
         DEBUGLN("fouce sending data to server");
         pmMeter();
       }
-      else if (_project_id == 4)
+      else if (_project_id[0] == 4)
       {
         DEBUGLN("fouce sending data to server");
         DHT();
       }
-      else if (_project_id == 5)
+      else if (_project_id[0] == 5)
       {
         DEBUGLN("fouce sending data to server");
         smartFarmSolar();
@@ -379,7 +413,7 @@ String Iotbundle::postHttp(String data)
   HTTPClient http;
 
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update_v5.php";
 
   DEBUG("[HTTP] begin...\n" + url);
@@ -446,7 +480,7 @@ String Iotbundle::postHttps(String data)
   HTTPClient https;
 
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update_v5.php";
 
   DEBUGLN("[HTTPS] begin...\n" + url);
@@ -627,7 +661,7 @@ void Iotbundle::acMeter()
 
   // create string
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
@@ -687,7 +721,7 @@ void Iotbundle::pmMeter()
 
   // create string
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
@@ -739,7 +773,7 @@ void Iotbundle::DHT()
 
   // create string
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;
@@ -790,7 +824,7 @@ void Iotbundle::smartFarmSolar()
 
   // create string
   String url = this->_server + "/api/";
-  url += String(_project_id);
+  url += String(_project_id[0]);
   url += "/update.php";
   url += "?user_id=" + String(_user_id);
   url += "&esp_id=" + _esp_id;

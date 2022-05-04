@@ -19,7 +19,7 @@ class Iotbundle
 
 private:
   String _server;
-  uint8_t _project_id;
+  int8_t _project_id[5] = {-1, -1, -1, -1, -1};
   String _email;
   String _pass;
   String _esp_id;
@@ -31,10 +31,16 @@ private:
   uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
-  uint16_t _AllowIO;                    // pin to allow to write
+  uint16_t _AllowIO = 0b111111111;      // pin to allow to write
 
   // clear sum variables
   void clearvar();
+
+  // set project id
+  void setProjectID(String project, uint8_t array_project);
+
+ // count project
+  int8_t projectCount();
 
   // rest api method
   String getData(String data);
@@ -88,6 +94,9 @@ public:
   void begin(String email, String pass, String server = "https://iotkiddie.com");
 
   // send data to server
+  void addProject(String project);
+
+  // send data to server
   void handle();
 
   // sumdata to cal average
@@ -99,7 +108,7 @@ public:
   // set allow io pin
   void setAllowIO(uint16_t allowio);
 
-  // fouce update data
+  // fouce update data before sleep
   void fouceUpdate(bool settolowall = false);
 };
 
