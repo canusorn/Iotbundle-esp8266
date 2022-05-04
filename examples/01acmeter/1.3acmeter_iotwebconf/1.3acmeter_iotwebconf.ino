@@ -59,7 +59,7 @@ char emailParamValue[STRING_LEN];
 char passParamValue[STRING_LEN];
 char serverParamValue[STRING_LEN];
 
-IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword, VERSION);  // version defind in iotbundle.h file
+IotWebConf iotWebConf(thingName, &dnsServer, &server, wifiInitialApPassword, VERSION); // version defind in iotbundle.h file
 // -- You can also use namespace formats e.g.: iotwebconf::TextParameter
 IotWebConfParameterGroup login = IotWebConfParameterGroup("login", "ล็อกอิน(สมัครที่เว็บก่อนนะครับ)");
 
@@ -202,6 +202,8 @@ void displayValue()
     frequency = NAN;
     pf = NAN;
   }
+
+  voltage=220;
 
   //------Update OLED display------
   oled.clear(PAGE);
@@ -418,9 +420,11 @@ void handleRoot()
   s += ESP.getChipId();
   s += "<li>Server : ";
   s += serverParamValue;
+  s += "<li>Version : ";
+  s += VERSION;
   s += "</ul>";
   s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
-  s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
+  s += "<a href='config'>configure page แก้ไขข้อมูล wifi และ user</a>";
   s += "</body></html>\n";
 
   server.send(200, "text/html", s);

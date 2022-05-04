@@ -54,7 +54,7 @@ void Iotbundle::begin(String email, String pass, String server)
       this->_email += _temp_email[i];
     }
   }
-  
+
   this->_pass = pass;
 
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
@@ -78,7 +78,7 @@ void Iotbundle::begin(String email, String pass, String server)
   url += "&version=" + v_int;
   // DEBUGLN(url);
 
-  String payload = getDataSSL(url);
+  String payload = getData(url);
 
   if (payload.toInt() > 0)
   {
@@ -221,9 +221,27 @@ void Iotbundle::clearvar()
   var_index = 0;
 }
 
-String Iotbundle::getDataSSL(String url)
+String Iotbundle::getData(String data)
 {
   String payload;
+  if (_server[4] == 's')
+    payload = getHttps(data);
+  else
+    payload = getHttp(data);
+  return payload;
+}
+
+String Iotbundle::postData(String data)
+{
+}
+
+String Iotbundle::getHttp(String data)
+{
+}
+String Iotbundle::getHttps(String data)
+{
+  String payload;
+  String url = data;
 
   std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
@@ -297,6 +315,12 @@ String Iotbundle::getDataSSL(String url)
   // }
 
   return payload;
+}
+String Iotbundle::postHttp(String data)
+{
+}
+String Iotbundle::postHttps(String data)
+{
 }
 
 bool Iotbundle::status()
@@ -446,7 +470,7 @@ void Iotbundle::acMeter()
   else if (newio_s)
     url += "&io_s=" + String(io);
 
-  String payload = getDataSSL(url);
+  String payload = getData(url);
 
   if (payload != "")
   {
@@ -499,7 +523,7 @@ void Iotbundle::pmMeter()
   else if (newio_s)
     url += "&io_s=" + String(io);
 
-  String payload = getDataSSL(url);
+  String payload = getData(url);
 
   if (payload != "")
   {
@@ -549,7 +573,7 @@ void Iotbundle::DHT()
   else if (newio_s)
     url += "&io_s=" + String(io);
 
-  String payload = getDataSSL(url);
+  String payload = getData(url);
 
   if (payload != "")
   {
@@ -604,7 +628,7 @@ void Iotbundle::smartFarmSolar()
   else if (newio_s)
     url += "&io_s=" + String(io);
 
-  String payload = getDataSSL(url);
+  String payload = getData(url);
 
   if (payload != "")
   {

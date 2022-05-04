@@ -10,7 +10,7 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 
-// #define IOTBUNDLE_DEBUG
+#define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 #define VERSION "0.0.5"
 
@@ -36,11 +36,12 @@ private:
   // clear sum variables
   void clearvar();
 
-  // get method with ssl
-  String getDataSSL(String url);
+  // rest api method
+  String getData(String data);
+  String postData(String data);
 
-  String getHttp(String url);
-  String getHttps(String url);
+  String getHttp(String data);
+  String getHttps(String data);
   String postHttp(String data);
   String postHttps(String data);
 
