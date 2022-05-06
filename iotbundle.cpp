@@ -106,9 +106,10 @@ void Iotbundle::addProject(String project)
   uint8_t projectarray = projectCount();
   setProjectID(project, projectarray);
 
+  // show all project
   for (byte i = 0; i < sizeof(this->_project_id); i++)
   {
-    if ((_project_id[i])<0)
+    if ((_project_id[i]) < 0)
     {
       return;
     }
@@ -126,34 +127,7 @@ void Iotbundle::handle()
     {
       if (_user_id > 0)
       {
-        if (_project_id[0] == 1)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          acMeter();
-        }
-        else if (_project_id[0] == 2)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          pmMeter();
-        }
-        else if (_project_id[0] == 4)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          DHT();
-        }
-        else if (_project_id[0] == 5)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          smartFarmSolar();
-        }
+        updateProject();
       }
       else
       {
@@ -170,11 +144,50 @@ void Iotbundle::handle()
   }
 }
 
+void Iotbundle::updateProject()
+{
+  if (_json_update == "")
+  {
+    _json_update = "{\"esp_id\":" + _esp_id + ",";
+    _json_update += "\"user_id\":" + String(_user_id) + ",";
+    _json_update += "\"count\":1,";
+    _json_update += "\"data\":[";
+  }
+  if (_project_id[0] == 1)
+  {
+    DEBUGLN("sending data to server");
+    if (!newio_s)
+      readio();
+    acMeter();
+  }
+  else if (_project_id[0] == 2)
+  {
+    DEBUGLN("sending data to server");
+    if (!newio_s)
+      readio();
+    pmMeter();
+  }
+  else if (_project_id[0] == 4)
+  {
+    DEBUGLN("sending data to server");
+    if (!newio_s)
+      readio();
+    DHT();
+  }
+  else if (_project_id[0] == 5)
+  {
+    DEBUGLN("sending data to server");
+    if (!newio_s)
+      readio();
+    smartFarmSolar();
+  }
+}
+
 int8_t Iotbundle::projectCount()
 {
   for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
   {
-    if ((_project_id[i])<0)
+    if ((_project_id[i]) < 0)
     {
       DEBUGLN(i);
       return i;
@@ -408,12 +421,11 @@ String Iotbundle::getHttps(String data)
 String Iotbundle::postHttp(String data)
 {
   String payload;
-
   WiFiClient client;
   HTTPClient http;
 
-  String url = this->_server + "/api/";
-  url += String(_project_id[0]);
+  String url = this->_server + "/api";
+  // url += String(_project_id[0]);
   url += "/update_v5.php";
 
   DEBUG("[HTTP] begin...\n" + url);
@@ -426,15 +438,15 @@ String Iotbundle::postHttp(String data)
 
     http.addHeader("Content-Type", "application/json");
 
-    DEBUG("[HTTP] POST...\n");
+    DEBUG("\n[HTTP] POST...\n" + data);
     // start connection and send HTTP header and body
-    int httpCode = http.POST("{\"hello\":\"world\"}");
+    int httpCode = http.POST(data);
 
     // httpCode will be negative on error
     if (httpCode > 0)
     {
       // HTTP header has been send and Server response header has been handled
-      DEBUG("[HTTP] POST... code: " + httpCode);
+      DEBUGLN("[HTTP] POST... code: " + String(httpCode));
 
       // file found at server
       if (httpCode == HTTP_CODE_OK)
@@ -479,8 +491,8 @@ String Iotbundle::postHttps(String data)
   client->setInsecure();
   HTTPClient https;
 
-  String url = this->_server + "/api/";
-  url += String(_project_id[0]);
+  String url = this->_server + "/api";
+  // url += String(_project_id[0]);
   url += "/update_v5.php";
 
   DEBUGLN("[HTTPS] begin...\n" + url);
@@ -493,15 +505,15 @@ String Iotbundle::postHttps(String data)
 
     https.addHeader("Content-Type", "application/json");
 
-    DEBUG("[HTTPS] POST...\n");
+    DEBUG("[HTTPS] POST...\n" + data);
     // start connection and send HTTP header and body
-    int httpCode = https.POST("{\"hello\":\"world\"}");
+    int httpCode = https.POST(data);
 
     // httpCode will be negative on error
     if (httpCode > 0)
     {
       // HTTP header has been send and Server response header has been handled
-      DEBUG("[HTTPS] POST... code: " + httpCode);
+      DEBUGLN("[HTTPS] POST... code: " + String(httpCode));
 
       // file found at server
       if (httpCode == HTTP_CODE_OK)
@@ -660,33 +672,41 @@ void Iotbundle::acMeter()
   float pf = var_sum[5] / var_index;
 
   // create string
-  String url = this->_server + "/api/";
-  url += String(_project_id[0]);
-  url += "/update.php";
-  url += "?user_id=" + String(_user_id);
-  url += "&esp_id=" + _esp_id;
+  // String url = this->_server + "/api/";
+  // url += String(_project_id[0]);
+  // url += "/update.php";
+  // url += "?user_id=" + String(_user_id);
+  // url += "&esp_id=" + _esp_id;
+
+  String data = _json_update;
+  data += "{\"project_id\":" + String(_project_id[0]);
+
   if (var_index)
   { // validate
     if (v >= 60 && v <= 260 && !isnan(v))
-      url += "&voltage=" + String(v, 1);
+      data += ",\"voltage\":" + String(v, 1);
     if (i >= 0 && i <= 100 && !isnan(i))
-      url += "&current=" + String(i, 3);
+      data += ",\"current\":" + String(i, 3);
     if (p >= 0 && p <= 24000 && !isnan(p))
-      url += "&power=" + String(p, 1);
+      data += ",\"power\":" + String(p, 1);
     if (e >= 0 && e <= 10000 && !isnan(e))
-      url += "&energy=" + String(e, 3);
+      data += ",\"energy\":" + String(e, 3);
     if (f >= 40 && f <= 70 && !isnan(f))
-      url += "&frequency=" + String(f, 1);
+      data += ",\"frequency\":" + String(f, 1);
     if (pf >= 0 && pf <= 1 && !isnan(pf))
-      url += "&pf=" + String(pf, 2);
+      data += ",\"pf\":" + String(pf, 2);
   }
-  if (newio_c)
-    url += "&io_c=" + String(io);
-  else if (newio_s)
-    url += "&io_s=" + String(io);
+  data += "}]";
 
-  // String payload = getData(url);
-  String payload = postData(url);
+  if (newio_c)
+    data += ",\"io_c\":" + String(io);
+  else if (newio_s)
+    data += ",\"io_s\":" + String(io);
+
+  data += "}";
+
+  // String payload = getData(data);
+  String payload = postData(data);
 
   if (payload != "")
   {

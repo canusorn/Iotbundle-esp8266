@@ -32,6 +32,7 @@ private:
   bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
   uint16_t _AllowIO = 0b111111111;      // pin to allow to write
+  String _json_update; // JSON update data
 
   // clear sum variables
   void clearvar();
@@ -62,6 +63,9 @@ private:
 
   // set input and low for allow pin
   void init_io();
+
+  // data update function
+  void updateProject();
 
   // parse json from payload
   int16_t Stringparse(String payload);
