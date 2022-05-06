@@ -42,7 +42,19 @@ void Iotbundle::begin(String email, String pass, String server)
   this->_server = server;
   if (this->_server == "")
     this->_server = "https://iotkiddie.com";
-  this->_email = email;
+
+  // delete spacebar from email
+  String _temp_email = email;
+  uint8_t e = _temp_email.length();
+  this->_email = "";
+  for (int i = 0; i < e; i++)
+  {
+    if (_temp_email[i] != ' ')
+    {
+      this->_email += _temp_email[i];
+    }
+  }
+  
   this->_pass = pass;
 
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
@@ -52,20 +64,32 @@ void Iotbundle::begin(String email, String pass, String server)
   url += "&pass=" + this->_pass;
   url += "&esp_id=" + this->_esp_id;
   url += "&project_id=" + String(this->_project_id);
+
+  // add in v0.0.5
+  String v_int = "";
+  uint8_t count = version.length();
+  for (int i = 0; i < count; i++)
+  {
+    if (version[i] != '.')
+    {
+      v_int += version[i];
+    }
+  }
+  url += "&version=" + v_int;
   // DEBUGLN(url);
 
   String payload = getDataSSL(url);
 
   if (payload.toInt() > 0)
   {
-    this->serverConnected=true;
+    this->serverConnected = true;
     _user_id = payload.toInt();
     DEBUGLN("get user_id : " + String(_user_id));
     this->noti = "-Login-\nlogin success";
   }
   else
   {
-    this->serverConnected=false;
+    this->serverConnected = false;
     this->noti = "-!Login-\n" + payload;
     DEBUGLN(payload);
   }
@@ -233,7 +257,7 @@ String Iotbundle::getDataSSL(String url)
       DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
 
       // file found at server
-      if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY)
+      if (httpCode == HTTP_CODE_OK)
       {
         payload = https.getString();
         DEBUGLN(payload);
@@ -242,7 +266,9 @@ String Iotbundle::getDataSSL(String url)
       }
       else
       {
+        payload = "code " + String(httpCode);
         serverConnected = false;
+        DEBUGLN(https.getString());
       }
       // if (https.hasHeader("Location"))
       // { // if has redirect code
