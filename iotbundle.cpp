@@ -424,9 +424,7 @@ String Iotbundle::postHttp(String data)
   WiFiClient client;
   HTTPClient http;
 
-  String url = this->_server + "/api";
-  // url += String(_project_id[0]);
-  url += "/update_v5.php";
+  String url = this->_server + "/api/v6/update.php";
 
   DEBUG("[HTTP] begin...\n" + url);
   // configure traged server and url
@@ -438,7 +436,7 @@ String Iotbundle::postHttp(String data)
 
     http.addHeader("Content-Type", "application/json");
 
-    DEBUG("\n[HTTP] POST...\n" + data);
+    DEBUGLN("\n[HTTP] POST...\n" + data);
     // start connection and send HTTP header and body
     int httpCode = http.POST(data);
 
@@ -491,9 +489,7 @@ String Iotbundle::postHttps(String data)
   client->setInsecure();
   HTTPClient https;
 
-  String url = this->_server + "/api";
-  // url += String(_project_id[0]);
-  url += "/update_v5.php";
+  String url = this->_server + "/api/v6/update.php";
 
   DEBUGLN("[HTTPS] begin...\n" + url);
   // configure traged server and url
@@ -505,7 +501,7 @@ String Iotbundle::postHttps(String data)
 
     https.addHeader("Content-Type", "application/json");
 
-    DEBUG("[HTTPS] POST...\n" + data);
+    DEBUGLN("[HTTPS] POST...\n" + data);
     // start connection and send HTTP header and body
     int httpCode = https.POST(data);
 
