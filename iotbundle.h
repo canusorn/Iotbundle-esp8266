@@ -33,6 +33,8 @@ private:
   uint16_t io, previo;                  // current io output, previous io
   uint16_t _AllowIO = 0b111111111;      // pin to allow to write
   String _json_update; // JSON update data
+  String _login_url;
+  String _update_url;
 
   // clear sum variables
   void clearvar();
@@ -45,15 +47,15 @@ private:
 
   // rest api method
   String getData(String data);
-  String postData(String data);
+  String postData(String data, String url);
 
   // data is url
   String getHttp(String data);
   String getHttps(String data);
 
   // data is json
-  String postHttp(String data);
-  String postHttps(String data);
+  String postHttp(String data,String url);
+  String postHttps(String data,String url);
 
   // handle io from server
   void iohandle_s();

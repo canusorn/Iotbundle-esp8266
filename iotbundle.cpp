@@ -49,6 +49,10 @@ void Iotbundle::begin(String email, String pass, String server)
   if (this->_server == "")
     this->_server = "https://iotkiddie.com";
 
+  // set login url
+  this->_login_url = this->_server + "/api/v6/connect.php";
+  this->_update_url = this->_server + "/api/v6/update.php";
+
   // delete spacebar from email
   String _temp_email = email;
   uint8_t e = _temp_email.length();
@@ -146,13 +150,15 @@ void Iotbundle::handle()
 
 void Iotbundle::updateProject()
 {
+
   if (_json_update == "")
   {
     _json_update = "{\"esp_id\":" + _esp_id + ",";
     _json_update += "\"user_id\":" + String(_user_id) + ",";
-    _json_update += "\"count\":1,";
+    _json_update += "\"count\":" + String(projectCount()) + ",";
     _json_update += "\"data\":[";
   }
+
   if (_project_id[0] == 1)
   {
     DEBUGLN("sending data to server");
@@ -277,13 +283,13 @@ String Iotbundle::getData(String data)
     return getHttp(data);
 }
 
-String Iotbundle::postData(String data)
+String Iotbundle::postData(String data, String url)
 {
   String payload;
   if (_server[4] == 's')
-    return postHttps(data);
+    return postHttps(data, url);
   else
-    return postHttp(data);
+    return postHttp(data, url);
 }
 
 String Iotbundle::getHttp(String data)
@@ -418,13 +424,11 @@ String Iotbundle::getHttps(String data)
   return payload;
 }
 
-String Iotbundle::postHttp(String data)
+String Iotbundle::postHttp(String data, String url)
 {
   String payload;
   WiFiClient client;
   HTTPClient http;
-
-  String url = this->_server + "/api/v6/update.php";
 
   DEBUG("[HTTP] begin...\n" + url);
   // configure traged server and url
@@ -481,15 +485,13 @@ String Iotbundle::postHttp(String data)
   return payload;
 }
 
-String Iotbundle::postHttps(String data)
+String Iotbundle::postHttps(String data, String url)
 {
   String payload;
 
   std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
   HTTPClient https;
-
-  String url = this->_server + "/api/v6/update.php";
 
   DEBUGLN("[HTTPS] begin...\n" + url);
   // configure traged server and url
@@ -667,13 +669,6 @@ void Iotbundle::acMeter()
   float f = var_sum[4] / var_index;
   float pf = var_sum[5] / var_index;
 
-  // create string
-  // String url = this->_server + "/api/";
-  // url += String(_project_id[0]);
-  // url += "/update.php";
-  // url += "?user_id=" + String(_user_id);
-  // url += "&esp_id=" + _esp_id;
-
   String data = _json_update;
   data += "{\"project_id\":" + String(_project_id[0]);
 
@@ -702,7 +697,7 @@ void Iotbundle::acMeter()
   data += "}";
 
   // String payload = getData(data);
-  String payload = postData(data);
+  String payload = postData(data, _update_url);
 
   if (payload != "")
   {
