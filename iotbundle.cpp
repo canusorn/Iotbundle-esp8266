@@ -76,6 +76,7 @@ void Iotbundle::begin(String email, String pass, String server)
   url += "&project_id=" + String(this->_project_id[0]);
 
   // add in v0.0.5
+  // loop for delete '.' ex. 0.0.5 => 5
   String v_int = "";
   uint8_t count = version.length();
   for (int i = 0; i < count; i++)
@@ -635,12 +636,12 @@ int16_t Iotbundle::Stringparse(String payload)
   payload.toCharArray(buff, str_len);
 
   int j = 0;
-  String user_id_r_str, io_s_str;
+  String res_code, io_s_str;
 
   for (int i = 0; i < str_len; i++)
   {
     if (j == 0)
-      user_id_r_str += buff[i];
+      res_code += buff[i];
     else if (j == 1)
       io_s_str += buff[i];
 
@@ -648,15 +649,31 @@ int16_t Iotbundle::Stringparse(String payload)
       j++;
   }
 
-  if (user_id_r_str.toInt() == _user_id) // check correct data
-    return io_s_str.toInt();
-  else if (user_id_r_str.toInt() == 0)
+  if (res_code.toInt() == 0) // have error
   {
-    DEBUGLN("!error:" + io_s_str);
+    Serial.println("!error:" + io_s_str);
     return -1;
   }
+  else if (res_code.toInt() == 1) // new io form server
+  {
+    io = io_s_str.toInt();
+    iohandle_s();
+    newio_s = true;
+    return 0;
+  }
+  else if (res_code.toInt() == 32767) // io from server updated
+  {
+    newio_s = false;
+    return 0;
+  }
+  else if (res_code.toInt() == 32766) // io from client updated
+  {
+    newio_s = false;
+    newio_c = false;
+    return 0;
+  }
   else
-    return user_id_r_str.toInt();
+    return res_code.toInt();
 }
 
 void Iotbundle::acMeter()
@@ -701,21 +718,10 @@ void Iotbundle::acMeter()
 
   if (payload != "")
   {
-    int16_t newio = Stringparse(payload);
-    if (newio == 32767) // io from server updated
+    int16_t res_code = Stringparse(payload);
+    if (res_code >= 0)
     {
-      newio_s = false;
-    }
-    else if (newio == 32766) // io from client updated
-    {
-      newio_s = false;
-      newio_c = false;
-    }
-    else if (newio >= 0)
-    {
-      io = newio;
-      iohandle_s();
-      newio_s = true;
+
     }
   }
 

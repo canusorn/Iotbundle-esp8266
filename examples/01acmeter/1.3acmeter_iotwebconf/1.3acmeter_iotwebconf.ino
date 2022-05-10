@@ -42,8 +42,6 @@ const char wifiInitialApPassword[] = "iotbundle";
 #define STRING_LEN 128
 #define NUMBER_LEN 32
 
-// #define CONFIG_VERSION iot.getVersion()
-
 // -- Method declarations.
 void handleRoot();
 // -- Callback methods.
