@@ -96,10 +96,10 @@ void Iotbundle::login()
   // url += "&esp_id=" + this->_esp_id;
   // url += "&project_id=" + String(this->_project_id[0]);
 
-String data = "{\"email\":\"" + this->_email;
-data += "\",\"pass\":\"" + this->_pass;
-data += "\",\"esp_id\":" + this->_esp_id;
-data += ",\"project_id\":\"" + project + "\",";
+  String data = "{\"email\":\"" + this->_email;
+  data += "\",\"pass\":\"" + this->_pass;
+  data += "\",\"esp_id\":" + this->_esp_id;
+  data += ",\"project_id\":\"" + project + "\",";
 
   // add in v0.0.5
   // loop for delete '.' ex. 0.0.5 => 5
@@ -117,7 +117,7 @@ data += ",\"project_id\":\"" + project + "\",";
   DEBUGLN(data);
 
   // String payload = getData(url);
-    String payload = postData(data, _login_url);
+  String payload = postData(data, _login_url);
 
   if (payload.toInt() > 0)
   {
@@ -200,38 +200,63 @@ void Iotbundle::updateProject()
   {
     _json_update = "{\"esp_id\":" + _esp_id + ",";
     _json_update += "\"user_id\":" + String(_user_id) + ",";
-    _json_update += "\"count\":" + String(projectCount()) + ",";
+    // _json_update += "\"count\":" + String(projectCount()) + ",";
     _json_update += "\"data\":[";
   }
 
-  if (_project_id[0] == 1)
+  uint8_t count = projectCount();
+  for (uint8_t i = 0; i < count; i++)
   {
-    DEBUGLN("sending data to server");
-    if (!newio_s)
-      readio();
-    acMeter();
+
+    if (i != 0)
+    {
+      _json_update += ',';
+    }
+
+    if (_project_id[i] == 1)
+    {
+      acMeter(i);
+    }
+    else if (_project_id[i] == 2)
+    {
+      pmMeter(i);
+    }
+    else if (_project_id[i] == 4)
+    {
+      DHT(i);
+    }
+    else if (_project_id[i] == 5)
+    {
+      smartFarmSolar(i);
+    }
   }
-  else if (_project_id[0] == 2)
+
+  _json_update += ']';
+
+  if (!newio_s)
+    readio();
+
+  if (newio_c)
+    _json_update += ",\"io_c\":" + String(io);
+  else if (newio_s)
+    _json_update += ",\"io_s\":" + String(io);
+
+  _json_update += "}";
+
+  DEBUGLN("sending data to server");
+
+  String payload = postData(_json_update, _update_url);
+  _json_update = "";
+  if (payload != "")
   {
-    DEBUGLN("sending data to server");
-    if (!newio_s)
-      readio();
-    pmMeter();
+    int16_t res_code = Stringparse(payload);
+    if (res_code >= 0)
+    {
+    }
   }
-  else if (_project_id[0] == 4)
-  {
-    DEBUGLN("sending data to server");
-    if (!newio_s)
-      readio();
-    DHT();
-  }
-  else if (_project_id[0] == 5)
-  {
-    DEBUGLN("sending data to server");
-    if (!newio_s)
-      readio();
-    smartFarmSolar();
-  }
+
+  if (serverConnected)
+    clearvar();
 }
 
 int8_t Iotbundle::projectCount()
@@ -720,7 +745,7 @@ int16_t Iotbundle::Stringparse(String payload)
     return res_code.toInt();
 }
 
-void Iotbundle::acMeter()
+void Iotbundle::acMeter(uint8_t id)
 {
   // calculate
   float v = var_sum[0] / var_index;
@@ -730,49 +755,29 @@ void Iotbundle::acMeter()
   float f = var_sum[4] / var_index;
   float pf = var_sum[5] / var_index;
 
-  String data = _json_update;
-  data += "{\"project_id\":" + String(_project_id[0]);
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
 
   if (var_index)
   { // validate
     if (v >= 60 && v <= 260 && !isnan(v))
-      data += ",\"voltage\":" + String(v, 1);
+      _json_update += ",\"voltage\":" + String(v, 1);
     if (i >= 0 && i <= 100 && !isnan(i))
-      data += ",\"current\":" + String(i, 3);
+      _json_update += ",\"current\":" + String(i, 3);
     if (p >= 0 && p <= 24000 && !isnan(p))
-      data += ",\"power\":" + String(p, 1);
+      _json_update += ",\"power\":" + String(p, 1);
     if (e >= 0 && e <= 10000 && !isnan(e))
-      data += ",\"energy\":" + String(e, 3);
+      _json_update += ",\"energy\":" + String(e, 3);
     if (f >= 40 && f <= 70 && !isnan(f))
-      data += ",\"frequency\":" + String(f, 1);
+      _json_update += ",\"frequency\":" + String(f, 1);
     if (pf >= 0 && pf <= 1 && !isnan(pf))
-      data += ",\"pf\":" + String(pf, 2);
+      _json_update += ",\"pf\":" + String(pf, 2);
   }
-  data += "}]";
-
-  if (newio_c)
-    data += ",\"io_c\":" + String(io);
-  else if (newio_s)
-    data += ",\"io_s\":" + String(io);
-
-  data += "}";
+  _json_update += "}";
 
   // String payload = getData(data);
-  String payload = postData(data, _update_url);
-
-  if (payload != "")
-  {
-    int16_t res_code = Stringparse(payload);
-    if (res_code >= 0)
-    {
-    }
-  }
-
-  if (serverConnected)
-    clearvar();
 }
 
-void Iotbundle::pmMeter()
+void Iotbundle::pmMeter(uint8_t id)
 {
   // calculate
   uint16_t pm1 = var_sum[0] / var_index;
@@ -825,7 +830,7 @@ void Iotbundle::pmMeter()
     clearvar();
 }
 
-void Iotbundle::DHT()
+void Iotbundle::DHT(uint8_t id)
 {
   // calculate
   float humid = var_sum[0] / var_index;
@@ -875,7 +880,7 @@ void Iotbundle::DHT()
     clearvar();
 }
 
-void Iotbundle::smartFarmSolar()
+void Iotbundle::smartFarmSolar(uint8_t id)
 {
   // calculate
   float humid = var_sum[0] / var_index;

@@ -87,7 +87,7 @@ void setup()
   Serial.begin(115200);
   Wire.begin();
 
-  iot.addProject("DHT");
+  // iot.addProject("DHT");
   //------Display LOGO at start------
   oled.begin();
   oled.clear(PAGE);

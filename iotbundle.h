@@ -79,16 +79,16 @@ private:
   int16_t Stringparse(String payload);
 
   // handle data acmeter'project
-  void acMeter();
+  void acMeter(uint8_t id = 0);
 
   // handle data pmmeter'project
-  void pmMeter();
+  void pmMeter(uint8_t id = 0);
 
   // handle data DHT'project
-  void DHT();
+  void DHT(uint8_t id = 0);
 
   // handle data smartFarmSolar'project
-  void smartFarmSolar();
+  void smartFarmSolar(uint8_t id = 0);
 
 public:
   Iotbundle(String project);
