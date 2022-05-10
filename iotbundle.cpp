@@ -69,6 +69,23 @@ void Iotbundle::begin(String email, String pass, String server)
 
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
 
+  DEBUGLN("No of Project : " + String(projectCount()));
+
+  String project = "";
+
+  for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) >= 0)
+    {
+      if (i != 0)
+      {
+        project += ",";
+      }
+      project += String(_project_id[i]);
+    }
+  }
+  DEBUGLN("Project String : " + project);
+
   String url = this->_server + "/api/connect.php";
   url += "?email=" + this->_email;
   url += "&pass=" + this->_pass;
@@ -111,14 +128,30 @@ void Iotbundle::addProject(String project)
   uint8_t projectarray = projectCount();
   setProjectID(project, projectarray);
 
+  projectSort();
+
   // show all project
   for (byte i = 0; i < sizeof(this->_project_id); i++)
   {
-    if ((_project_id[i]) < 0)
+    if ((_project_id[i]) >= 0)
+      DEBUGLN("project " + String(i) + " : " + String(_project_id[i]));
+  }
+}
+
+void Iotbundle::projectSort()
+{
+  for (int i = 1; i < sizeof(this->_project_id); ++i)
+  {
+    if (_project_id[i] >= 0)
     {
-      return;
+      int j = _project_id[i];
+      int k;
+      for (k = i - 1; (k >= 0) && (j < _project_id[k]); k--)
+      {
+        _project_id[k + 1] = _project_id[k];
+      }
+      _project_id[k + 1] = j;
     }
-    DEBUGLN("project " + String(i + 1) + " : " + String(_project_id[i]));
   }
 }
 
@@ -721,7 +754,6 @@ void Iotbundle::acMeter()
     int16_t res_code = Stringparse(payload);
     if (res_code >= 0)
     {
-
     }
   }
 
