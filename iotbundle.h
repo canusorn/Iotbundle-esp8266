@@ -37,6 +37,9 @@ private:
   String _update_url;
 
   // clear sum variables
+  void login();
+
+  // clear sum variables
   void clearvar();
 
   // set project id

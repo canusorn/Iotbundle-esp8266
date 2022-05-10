@@ -64,15 +64,19 @@ void Iotbundle::begin(String email, String pass, String server)
       this->_email += _temp_email[i];
     }
   }
-
   this->_pass = pass;
 
+  login();
+}
+
+void Iotbundle::login()
+{
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
 
   DEBUGLN("No of Project : " + String(projectCount()));
 
+  // get string project
   String project = "";
-
   for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
   {
     if ((_project_id[i]) >= 0)
@@ -86,11 +90,16 @@ void Iotbundle::begin(String email, String pass, String server)
   }
   DEBUGLN("Project String : " + project);
 
-  String url = this->_server + "/api/connect.php";
-  url += "?email=" + this->_email;
-  url += "&pass=" + this->_pass;
-  url += "&esp_id=" + this->_esp_id;
-  url += "&project_id=" + String(this->_project_id[0]);
+  // String url = this->_server + "/api/connect.php";
+  // url += "?email=" + this->_email;
+  // url += "&pass=" + this->_pass;
+  // url += "&esp_id=" + this->_esp_id;
+  // url += "&project_id=" + String(this->_project_id[0]);
+
+String data = "{\"email\":\"" + this->_email;
+data += "\",\"pass\":\"" + this->_pass;
+data += "\",\"esp_id\":" + this->_esp_id;
+data += ",\"project_id\":\"" + project + "\",";
 
   // add in v0.0.5
   // loop for delete '.' ex. 0.0.5 => 5
@@ -103,10 +112,12 @@ void Iotbundle::begin(String email, String pass, String server)
       v_int += version[i];
     }
   }
-  url += "&version=" + v_int;
-  // DEBUGLN(url);
+  data += "\"version\":" + String(v_int.toInt()) + "}";
 
-  String payload = getData(url);
+  DEBUGLN(data);
+
+  // String payload = getData(url);
+    String payload = postData(data, _login_url);
 
   if (payload.toInt() > 0)
   {
@@ -175,7 +186,7 @@ void Iotbundle::handle()
           _get_userid = 0;
 
           DEBUGLN("retry login");
-          begin(this->_email, this->_pass, this->_server);
+          login();
         }
       }
     }
