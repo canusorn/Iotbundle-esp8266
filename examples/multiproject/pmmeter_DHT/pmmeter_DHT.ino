@@ -174,9 +174,7 @@ void loop()
     if (pms.read(data))
     {
         sensordetect = 0;
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-            ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
-            ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
+        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง   */
         iot.setProject("PM_METER");
         iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
     }
@@ -186,6 +184,12 @@ void loop()
     { // run every 2 second
         float humid = dht.readHumidity();
         float temp = dht.readTemperature();
+
+        Serial.print(F("Humidity: "));
+        Serial.print(humid);
+        Serial.print(F("%  Temperature: "));
+        Serial.print(temp);
+        Serial.println(F("°C "));
 
         iot.setProject("DHT");
         iot.update(humid, temp);
@@ -396,6 +400,7 @@ void wifiConnected()
             iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
         else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
             iot.begin((String)emailParamValue, (String)passParamValue);
+
     }
 }
 

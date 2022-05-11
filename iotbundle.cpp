@@ -840,7 +840,7 @@ void Iotbundle::pmMeter(uint8_t id)
 void Iotbundle::DHT(uint8_t id)
 {
   // get project id
-  uint8_t project_id = getProjectID("AC_METER");
+  uint8_t project_id = getProjectID("DHT");
 
   // find project array index
   uint8_t array;
@@ -870,7 +870,7 @@ void Iotbundle::DHT(uint8_t id)
 void Iotbundle::smartFarmSolar(uint8_t id)
 {
   // get project id
-  uint8_t project_id = getProjectID("AC_METER");
+  uint8_t project_id = getProjectID("smartfarm_solar");
 
   // find project array index
   uint8_t array;
