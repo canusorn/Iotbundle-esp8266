@@ -50,6 +50,7 @@ PMS::DATA data;
 // #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 DHT dht(DHTPIN, DHTTYPE);
+uint8_t dht_time;
 
 #define PIN_RESET -1
 #define DC_JUMPER 0
@@ -174,14 +175,24 @@ void loop()
     if (pms.read(data))
     {
         sensordetect = 0;
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง   */
+        /*  4.1 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+            และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
         iot.setProject("PM_METER");
         iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
     }
 
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= 2000)
-    { // run every 2 second
+    { // run every 1 second
+        previousMillis = currentMillis;
+        dht_time++;
+        display_update(); // update OLED
+        sensordetect ++;
+    }
+
+    if (dht_time >= 2)
+    { // dht read every 2 second
+        dht_time = 0;
         float humid = dht.readHumidity();
         float temp = dht.readTemperature();
 
@@ -191,12 +202,10 @@ void loop()
         Serial.print(temp);
         Serial.println(F("°C "));
 
+        /*  4.2 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+            และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
         iot.setProject("DHT");
         iot.update(humid, temp);
-
-        previousMillis = currentMillis;
-        display_update(); // update OLED
-        sensordetect += 2;
     }
 }
 
@@ -400,7 +409,6 @@ void wifiConnected()
             iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
         else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
             iot.begin((String)emailParamValue, (String)passParamValue);
-
     }
 }
 
