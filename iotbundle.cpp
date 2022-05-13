@@ -266,7 +266,6 @@ void Iotbundle::updateProject()
     }
   }
 
-  if (serverConnected)
     clearvar();
 }
 
@@ -858,9 +857,9 @@ void Iotbundle::DHT(uint8_t id)
 
   if (var_index[array])
   { // validate
-    if (humid >= 0 && humid <= 100 && !isnan(humid))
+    if (humid >= 10 && humid <= 100 && !isnan(humid))
       _json_update += ",\"humid\":" + String(humid, 1);
-    if (temp >= -40 && temp <= 80 && !isnan(temp))
+    if (temp >= 5 && temp <= 70 && !isnan(temp))
       _json_update += ",\"temp\":" + String(temp, 1);
   }
 
