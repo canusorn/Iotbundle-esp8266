@@ -187,6 +187,7 @@ void loop()
 
         /*  4.1 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
+             iot.setProject("AC_METER");
         iot.update(voltage, current, power, energy, frequency, pf);
     }
 

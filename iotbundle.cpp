@@ -319,12 +319,6 @@ void Iotbundle::update(float var1, float var2, float var3, float var4, float var
   if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan
   {
 
-    // if var more than 500,000
-    if (var_sum[0][activeProject] > 5 * 10e5 || var_sum[1][activeProject] > 5 * 10e5 || var_sum[2][activeProject] > 5 * 10e5 || var_sum[3][activeProject] > 5 * 10e5 || var_sum[4][activeProject] > 5 * 10e5 || var_sum[5][activeProject] > 5 * 10e5 || var_sum[6][activeProject] > 5 * 10e5 || var_sum[7][activeProject] > 5 * 10e5 || var_sum[8][activeProject] > 5 * 10e5 || var_sum[9][activeProject] > 5 * 10e5)
-    {
-      clearvar();
-    }
-
     var_index[activeProject]++;
     var_sum[0][activeProject] += var1;
     var_sum[1][activeProject] += var2;
