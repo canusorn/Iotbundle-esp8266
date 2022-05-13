@@ -12,37 +12,57 @@
 
 // #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.5"
+#define VERSION "0.0.6"
 
 class Iotbundle
 {
 
 private:
   String _server;
-  uint8_t _project_id;
+  int8_t _project_id[5] = {-1, -1, -1, -1, -1};
+  uint8_t activeProject = 0; // current activeProject to update var
   String _email;
   String _pass;
   String _esp_id;
   uint16_t _user_id;
-  float var_sum[10]; // store sum variables
-  uint8_t var_index; // number of store file
+  float var_sum[10][5]; // store sum variables
+  uint8_t var_index[5]; // number of store file
   uint32_t _previousMillis;
   uint8_t sendtime = 5;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
-  uint16_t _AllowIO;                    // pin to allow to write
+  uint16_t _AllowIO = 0b111111111;      // pin to allow to write
+  String _json_update;                  // JSON update data
+  String _login_url;
+  String _update_url;
+
+  // clear sum variables
+  void login();
 
   // clear sum variables
   void clearvar();
 
-  // get method with ssl
-  String getDataSSL(String url);
+  // set project id
+  void setProjectID(String project, uint8_t array_project);
 
-  String getHttp(String url);
-  String getHttps(String url);
-  String postHttp(String data);
-  String postHttps(String data);
+  // count project
+  int8_t projectCount();
+
+  // return String project
+  void projectSort();
+
+  // rest api method
+  String getData(String data);
+  String postData(String data, String url);
+
+  // data is url
+  String getHttp(String data);
+  String getHttps(String data);
+
+  // data is json
+  String postHttp(String data, String url);
+  String postHttps(String data, String url);
 
   // handle io from server
   void iohandle_s();
@@ -53,20 +73,26 @@ private:
   // set input and low for allow pin
   void init_io();
 
+  // data update function
+  void updateProject();
+
   // parse json from payload
   int16_t Stringparse(String payload);
 
+  // get project id form name
+  uint8_t getProjectID(String project);
+
   // handle data acmeter'project
-  void acMeter();
+  void acMeter(uint8_t id = 0);
 
   // handle data pmmeter'project
-  void pmMeter();
+  void pmMeter(uint8_t id = 0);
 
   // handle data DHT'project
-  void DHT();
+  void DHT(uint8_t id = 0);
 
   // handle data smartFarmSolar'project
-  void smartFarmSolar();
+  void smartFarmSolar(uint8_t id = 0);
 
 public:
   Iotbundle(String project);
@@ -84,7 +110,13 @@ public:
   void begin(String email, String pass, String server = "https://iotkiddie.com");
 
   // send data to server
+  void addProject(String project);
+
+  // send data to server
   void handle();
+
+  // set active project to update var
+  void setProject(String projectname);
 
   // sumdata to cal average
   void update(float var1 = NAN, float var2 = NAN, float var3 = NAN, float var4 = NAN, float var5 = NAN, float var6 = NAN, float var7 = NAN, float var8 = NAN, float var9 = NAN, float var10 = NAN);
@@ -95,7 +127,7 @@ public:
   // set allow io pin
   void setAllowIO(uint16_t allowio);
 
-  // fouce update data
+  // fouce update data before sleep
   void fouceUpdate(bool settolowall = false);
 };
 

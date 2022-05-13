@@ -3,36 +3,29 @@
 Iotbundle::Iotbundle(String project)
 {
   // set project id
-  if (project == "AC_METER")
-  {
-    this->_project_id = 1;
-    _AllowIO = 0b111100001;
-  } // pin4,3=pzem  2,1=i2c
-  else if (project == "PM_METER")
-  {
-    this->_project_id = 2;
-    _AllowIO = 0b111100001;
-  }
-  else if (project == "DC_METER")
-  {
-    this->_project_id = 3;
-  }
-  else if (project == "DHT")
-  {
-    this->_project_id = 4;
-    _AllowIO = 0b101111001;
-  }
-  else if (project == "smartfarm_solar")
-  {
-    this->_project_id = 5;
-    _AllowIO = 0b101100110;
-  }
+  setProjectID(project, 0);
 
   // set all allow pin to low
   init_io();
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
+}
+
+void Iotbundle::setProjectID(String project, uint8_t array_project)
+{
+  // set project id
+  this->_project_id[array_project] = getProjectID(project);
+
+  if (this->_project_id[array_project] == 1)
+    _AllowIO &= 0b111100001;
+  else if (this->_project_id[array_project] == 2)
+    _AllowIO &= 0b111100001;
+  // else if (this->_project_id[array_project] == 3)
+  else if (this->_project_id[array_project] == 4)
+    _AllowIO &= 0b101111001;
+  else if (this->_project_id[array_project] == 5)
+    _AllowIO &= 0b101100110;
 }
 
 void Iotbundle::begin(String email, String pass, String server)
@@ -42,6 +35,10 @@ void Iotbundle::begin(String email, String pass, String server)
   this->_server = server;
   if (this->_server == "")
     this->_server = "https://iotkiddie.com";
+
+  // set login url
+  this->_login_url = this->_server + "/api/v6/connect.php";
+  this->_update_url = this->_server + "/api/v6/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -54,18 +51,45 @@ void Iotbundle::begin(String email, String pass, String server)
       this->_email += _temp_email[i];
     }
   }
-  
   this->_pass = pass;
 
+  login();
+}
+
+void Iotbundle::login()
+{
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
 
-  String url = this->_server + "/api/connect.php";
-  url += "?email=" + this->_email;
-  url += "&pass=" + this->_pass;
-  url += "&esp_id=" + this->_esp_id;
-  url += "&project_id=" + String(this->_project_id);
+  DEBUGLN("No of Project : " + String(projectCount()));
+
+  // get string project
+  String project = "";
+  for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) >= 0)
+    {
+      if (i != 0)
+      {
+        project += ",";
+      }
+      project += String(_project_id[i]);
+    }
+  }
+  DEBUGLN("Project String : " + project);
+
+  // String url = this->_server + "/api/connect.php";
+  // url += "?email=" + this->_email;
+  // url += "&pass=" + this->_pass;
+  // url += "&esp_id=" + this->_esp_id;
+  // url += "&project_id=" + String(this->_project_id[0]);
+
+  String data = "{\"email\":\"" + this->_email;
+  data += "\",\"pass\":\"" + this->_pass;
+  data += "\",\"esp_id\":" + this->_esp_id;
+  data += ",\"project_id\":\"" + project + "\",";
 
   // add in v0.0.5
+  // loop for delete '.' ex. 0.0.5 => 5
   String v_int = "";
   uint8_t count = version.length();
   for (int i = 0; i < count; i++)
@@ -75,10 +99,12 @@ void Iotbundle::begin(String email, String pass, String server)
       v_int += version[i];
     }
   }
-  url += "&version=" + v_int;
-  // DEBUGLN(url);
+  data += "\"version\":" + String(v_int.toInt()) + "}";
 
-  String payload = getDataSSL(url);
+  DEBUGLN(data);
+
+  // String payload = getData(url);
+  String payload = postData(data, _login_url);
 
   if (payload.toInt() > 0)
   {
@@ -95,6 +121,62 @@ void Iotbundle::begin(String email, String pass, String server)
   }
 }
 
+void Iotbundle::addProject(String project)
+{
+  uint8_t projectarray = projectCount();
+  setProjectID(project, projectarray);
+
+  projectSort();
+
+  // show all project
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) >= 0)
+      DEBUGLN("project " + String(i) + " : " + String(_project_id[i]));
+  }
+}
+
+void Iotbundle::projectSort()
+{
+  for (int i = 1; i < sizeof(this->_project_id); ++i)
+  {
+    if (_project_id[i] >= 0)
+    {
+      int j = _project_id[i];
+      int k;
+      for (k = i - 1; (k >= 0) && (j < _project_id[k]); k--)
+      {
+        _project_id[k + 1] = _project_id[k];
+      }
+      _project_id[k + 1] = j;
+    }
+  }
+}
+
+uint8_t Iotbundle::getProjectID(String project)
+{
+  if (project == "AC_METER")
+  {
+    return 1;
+  }
+  else if (project == "PM_METER")
+  {
+    return 2;
+  }
+  else if (project == "DC_METER")
+  {
+    return 3;
+  }
+  else if (project == "DHT")
+  {
+    return 4;
+  }
+  else if (project == "smartfarm_solar")
+  {
+    return 5;
+  }
+}
+
 void Iotbundle::handle()
 {
   uint32_t currentMillis = millis();
@@ -105,34 +187,7 @@ void Iotbundle::handle()
     {
       if (_user_id > 0)
       {
-        if (_project_id == 1)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          acMeter();
-        }
-        else if (_project_id == 2)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          pmMeter();
-        }
-        else if (_project_id == 4)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          DHT();
-        }
-        else if (_project_id == 5)
-        {
-          DEBUGLN("sending data to server");
-          if (!newio_s)
-            readio();
-          smartFarmSolar();
-        }
+        updateProject();
       }
       else
       {
@@ -142,11 +197,89 @@ void Iotbundle::handle()
           _get_userid = 0;
 
           DEBUGLN("retry login");
-          begin(this->_email, this->_pass, this->_server);
+          login();
         }
       }
     }
   }
+}
+
+void Iotbundle::updateProject()
+{
+
+  if (_json_update == "")
+  {
+    _json_update = "{\"esp_id\":" + _esp_id + ",";
+    _json_update += "\"user_id\":" + String(_user_id) + ",";
+    // _json_update += "\"count\":" + String(projectCount()) + ",";
+    _json_update += "\"data\":[";
+  }
+
+  uint8_t count = projectCount();
+  for (uint8_t i = 0; i < count; i++)
+  {
+
+    if (i != 0)
+    {
+      _json_update += ',';
+    }
+
+    if (_project_id[i] == 1)
+    {
+      acMeter(i);
+    }
+    else if (_project_id[i] == 2)
+    {
+      pmMeter(i);
+    }
+    else if (_project_id[i] == 4)
+    {
+      DHT(i);
+    }
+    else if (_project_id[i] == 5)
+    {
+      smartFarmSolar(i);
+    }
+  }
+
+  _json_update += ']';
+
+  if (!newio_s)
+    readio();
+
+  if (newio_c)
+    _json_update += ",\"io_c\":" + String(io);
+  else if (newio_s)
+    _json_update += ",\"io_s\":" + String(io);
+
+  _json_update += "}";
+
+  DEBUGLN("sending data to server");
+
+  String payload = postData(_json_update, _update_url);
+  _json_update = "";
+  if (payload != "")
+  {
+    int16_t res_code = Stringparse(payload);
+    if (res_code >= 0)
+    {
+    }
+  }
+
+    clearvar();
+}
+
+int8_t Iotbundle::projectCount()
+{
+  for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) < 0)
+    {
+      DEBUGLN(i);
+      return i;
+    }
+  }
+  return -1;
 }
 
 void Iotbundle::fouceUpdate(bool settolowall)
@@ -162,50 +295,46 @@ void Iotbundle::fouceUpdate(bool settolowall)
         newio_c = true;
       }
 
-      if (_project_id == 1)
-      {
-        DEBUGLN("fouce sending data to server");
-        acMeter();
-      }
-      else if (_project_id == 2)
-      {
-        DEBUGLN("fouce sending data to server");
-        pmMeter();
-      }
-      else if (_project_id == 4)
-      {
-        DEBUGLN("fouce sending data to server");
-        DHT();
-      }
-      else if (_project_id == 5)
-      {
-        DEBUGLN("fouce sending data to server");
-        smartFarmSolar();
-      }
+      updateProject();
     }
+  }
+}
+
+void Iotbundle::setProject(String projectname)
+{
+  // get project id
+  uint8_t project_id = getProjectID(projectname);
+
+  // find project array index
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      activeProject = i;
   }
 }
 
 void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
+
   if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan
   {
-    var_index++;
-    var_sum[0] += var1;
-    var_sum[1] += var2;
-    var_sum[2] += var3;
-    var_sum[3] += var4;
-    var_sum[4] += var5;
-    var_sum[5] += var6;
-    var_sum[6] += var7;
-    var_sum[7] += var8;
-    var_sum[8] += var9;
-    var_sum[9] += var10;
 
-    DEBUG("updated data " + String(var_index) + " -> ");
-    for (int i = 0; i < sizeof(var_sum) / sizeof(var_sum[0]); i++)
+    var_index[activeProject]++;
+    var_sum[0][activeProject] += var1;
+    var_sum[1][activeProject] += var2;
+    var_sum[2][activeProject] += var3;
+    var_sum[3][activeProject] += var4;
+    var_sum[4][activeProject] += var5;
+    var_sum[5][activeProject] += var6;
+    var_sum[6][activeProject] += var7;
+    var_sum[7][activeProject] += var8;
+    var_sum[8][activeProject] += var9;
+    var_sum[9][activeProject] += var10;
+
+    DEBUG("updated data " + String(var_index[activeProject]) + " -> ");
+    for (int i = 0; i < 10; i++)
     {
-      DEBUG(String(var_sum[i]) + ", ");
+      DEBUG(String(var_sum[i][activeProject]) + ", ");
     }
     DEBUGLN();
     DEBUGLN("FreeHeap : " + String(ESP.getFreeHeap()));
@@ -214,14 +343,102 @@ void Iotbundle::update(float var1, float var2, float var3, float var4, float var
 
 void Iotbundle::clearvar()
 {
-  for (int i = 0; i < sizeof(var_sum) / sizeof(var_sum[0]); i++)
+  for (int i = 0; i < 10; i++)
   {
-    var_sum[i] = 0;
+    for (int i2 = 0; i2 < 5; i2++)
+    {
+      var_sum[i][i2] = 0;
+    }
   }
-  var_index = 0;
+  for (int j = 0; j < 5; j++)
+  {
+    var_index[j] = 0;
+  }
 }
 
-String Iotbundle::getDataSSL(String url)
+String Iotbundle::getData(String data)
+{
+  String payload;
+  if (_server[4] == 's')
+    return getHttps(data);
+  else
+    return getHttp(data);
+}
+
+String Iotbundle::postData(String data, String url)
+{
+  String payload;
+  if (_server[4] == 's')
+    return postHttps(data, url);
+  else
+    return postHttp(data, url);
+}
+
+String Iotbundle::getHttp(String data)
+{
+
+  String payload;
+
+  WiFiClient client;
+
+  HTTPClient http;
+
+  DEBUG("[HTTP] begin...\n");
+
+  DEBUGLN(data);
+
+  if (http.begin(client, data))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    DEBUG("[HTTP] GET...\n");
+    // start connection and send HTTP header
+    int httpCode = http.GET();
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUGLN("[HTTPS] GET... code: " + String(httpCode));
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = http.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(http.getString());
+      }
+    }
+    else
+    {
+      DEBUGLN("[HTTP] GET... failed, error:" + http.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    http.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTP} Unable to connect\n");
+    serverConnected = false;
+  }
+  return payload;
+}
+
+String Iotbundle::getHttps(String data)
 {
   String payload;
 
@@ -234,14 +451,10 @@ String Iotbundle::getDataSSL(String url)
 
   DEBUG("[HTTPS] begin...\n");
 
-  DEBUGLN(url);
+  DEBUGLN(data);
 
-  // while (!(url == ""))
-  // {
-
-  if (https.begin(*client, url))
-  { // HTTP
-    // url = "";
+  if (https.begin(*client, data))
+  {
 
     // start timer
     uint32_t startGet = millis();
@@ -261,7 +474,6 @@ String Iotbundle::getDataSSL(String url)
       {
         payload = https.getString();
         DEBUGLN(payload);
-
         serverConnected = true;
       }
       else
@@ -270,11 +482,6 @@ String Iotbundle::getDataSSL(String url)
         serverConnected = false;
         DEBUGLN(https.getString());
       }
-      // if (https.hasHeader("Location"))
-      // { // if has redirect code
-      //   url = https.header("Location");
-      //   DEBUGLN(url);
-      // }
     }
     else
     {
@@ -291,11 +498,135 @@ String Iotbundle::getDataSSL(String url)
   }
   else
   {
-    DEBUGLN("[HTTPS} Unable to connect");
+    DEBUGLN("[HTTPS] Unable to connect");
     serverConnected = false;
   }
   // }
 
+  return payload;
+}
+
+String Iotbundle::postHttp(String data, String url)
+{
+  String payload;
+  WiFiClient client;
+  HTTPClient http;
+
+  DEBUG("[HTTP] begin...\n" + url);
+  // configure traged server and url
+  if (http.begin(client, url))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    http.addHeader("Content-Type", "application/json");
+
+    DEBUGLN("\n[HTTP] POST...\n" + data);
+    // start connection and send HTTP header and body
+    int httpCode = http.POST(data);
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUGLN("[HTTP] POST... code: " + String(httpCode));
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = http.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(http.getString());
+      }
+    }
+    else
+    {
+      DEBUG("[HTTP] POST... failed, error: " + http.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    http.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTP} Unable to connect\n");
+    serverConnected = false;
+  }
+  return payload;
+}
+
+String Iotbundle::postHttps(String data, String url)
+{
+  String payload;
+
+  std::unique_ptr<BearSSL::WiFiClientSecure> client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+  HTTPClient https;
+
+  DEBUGLN("[HTTPS] begin...\n" + url);
+  // configure traged server and url
+  if (https.begin(*client, url))
+  { // HTTP
+
+    // start timer
+    uint32_t startGet = millis();
+
+    https.addHeader("Content-Type", "application/json");
+
+    DEBUGLN("[HTTPS] POST...\n" + data);
+    // start connection and send HTTP header and body
+    int httpCode = https.POST(data);
+
+    // httpCode will be negative on error
+    if (httpCode > 0)
+    {
+      // HTTP header has been send and Server response header has been handled
+      DEBUGLN("[HTTPS] POST... code: " + String(httpCode));
+
+      // file found at server
+      if (httpCode == HTTP_CODE_OK)
+      {
+        payload = https.getString();
+        DEBUGLN(payload);
+        serverConnected = true;
+      }
+      else
+      {
+        payload = "code " + String(httpCode);
+        serverConnected = false;
+        DEBUGLN(https.getString());
+      }
+    }
+    else
+    {
+      DEBUG("[HTTP] POST... failed, error: " + https.errorToString(httpCode));
+      serverConnected = false;
+    }
+
+    https.end();
+
+    // end timer and show update time
+    uint32_t endGet = millis();
+    DEBUGLN("update time : " + String(endGet - startGet) + " ms");
+    DEBUGLN();
+  }
+  else
+  {
+    DEBUG("[HTTPS] Unable to connect\n");
+    serverConnected = false;
+  }
   return payload;
 }
 
@@ -386,12 +717,12 @@ int16_t Iotbundle::Stringparse(String payload)
   payload.toCharArray(buff, str_len);
 
   int j = 0;
-  String user_id_r_str, io_s_str;
+  String res_code, io_s_str;
 
   for (int i = 0; i < str_len; i++)
   {
     if (j == 0)
-      user_id_r_str += buff[i];
+      res_code += buff[i];
     else if (j == 1)
       io_s_str += buff[i];
 
@@ -399,233 +730,165 @@ int16_t Iotbundle::Stringparse(String payload)
       j++;
   }
 
-  if (user_id_r_str.toInt() == _user_id) // check correct data
-    return io_s_str.toInt();
-  else if (user_id_r_str.toInt() == 0)
+  if (res_code.toInt() == 0) // have error
   {
-    DEBUGLN("!error:" + io_s_str);
+    Serial.println("!error:" + io_s_str);
     return -1;
   }
+  else if (res_code.toInt() == 1) // new io form server
+  {
+    io = io_s_str.toInt();
+    iohandle_s();
+    newio_s = true;
+    return 0;
+  }
+  else if (res_code.toInt() == 32767) // io from server updated
+  {
+    newio_s = false;
+    return 0;
+  }
+  else if (res_code.toInt() == 32766) // io from client updated
+  {
+    newio_s = false;
+    newio_c = false;
+    return 0;
+  }
   else
-    return user_id_r_str.toInt();
+    return res_code.toInt();
 }
 
-void Iotbundle::acMeter()
+void Iotbundle::acMeter(uint8_t id)
 {
-  // calculate
-  float v = var_sum[0] / var_index;
-  float i = var_sum[1] / var_index;
-  float p = var_sum[2] / var_index;
-  float e = var_sum[3] / var_index;
-  float f = var_sum[4] / var_index;
-  float pf = var_sum[5] / var_index;
+  // get project id
+  uint8_t project_id = getProjectID("AC_METER");
 
-  // create string
-  String url = this->_server + "/api/";
-  url += String(_project_id);
-  url += "/update.php";
-  url += "?user_id=" + String(_user_id);
-  url += "&esp_id=" + _esp_id;
-  if (var_index)
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float v = var_sum[0][array] / var_index[array];
+  float i = var_sum[1][array] / var_index[array];
+  float p = var_sum[2][array] / var_index[array];
+  float e = var_sum[3][array] / var_index[array];
+  float f = var_sum[4][array] / var_index[array];
+  float pf = var_sum[5][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
   { // validate
     if (v >= 60 && v <= 260 && !isnan(v))
-      url += "&voltage=" + String(v, 1);
+      _json_update += ",\"voltage\":" + String(v, 1);
     if (i >= 0 && i <= 100 && !isnan(i))
-      url += "&current=" + String(i, 3);
+      _json_update += ",\"current\":" + String(i, 3);
     if (p >= 0 && p <= 24000 && !isnan(p))
-      url += "&power=" + String(p, 1);
+      _json_update += ",\"power\":" + String(p, 1);
     if (e >= 0 && e <= 10000 && !isnan(e))
-      url += "&energy=" + String(e, 3);
+      _json_update += ",\"energy\":" + String(e, 3);
     if (f >= 40 && f <= 70 && !isnan(f))
-      url += "&frequency=" + String(f, 1);
+      _json_update += ",\"frequency\":" + String(f, 1);
     if (pf >= 0 && pf <= 1 && !isnan(pf))
-      url += "&pf=" + String(pf, 2);
+      _json_update += ",\"pf\":" + String(pf, 2);
   }
-  if (newio_c)
-    url += "&io_c=" + String(io);
-  else if (newio_s)
-    url += "&io_s=" + String(io);
-
-  String payload = getDataSSL(url);
-
-  if (payload != "")
-  {
-    int16_t newio = Stringparse(payload);
-    if (newio == 32767) // io from server updated
-    {
-      newio_s = false;
-    }
-    else if (newio == 32766) // io from client updated
-    {
-      newio_s = false;
-      newio_c = false;
-    }
-    else if (newio >= 0)
-    {
-      io = newio;
-      iohandle_s();
-      newio_s = true;
-    }
-  }
-
-  if (serverConnected)
-    clearvar();
+  _json_update += "}";
 }
 
-void Iotbundle::pmMeter()
+void Iotbundle::pmMeter(uint8_t id)
 {
-  // calculate
-  uint16_t pm1 = var_sum[0] / var_index;
-  uint16_t pm2 = var_sum[1] / var_index;
-  uint16_t pm10 = var_sum[2] / var_index;
+  // get project id
+  uint8_t project_id = getProjectID("PM_METER");
 
-  // create string
-  String url = this->_server + "/api/";
-  url += String(_project_id);
-  url += "/update.php";
-  url += "?user_id=" + String(_user_id);
-  url += "&esp_id=" + _esp_id;
-  if (var_index)
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  uint16_t pm1 = var_sum[0][array] / var_index[array];
+  uint16_t pm2 = var_sum[1][array] / var_index[array];
+  uint16_t pm10 = var_sum[2][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
   { // validate
     if (pm1 >= 0 && pm1 <= 1999 && !isnan(pm1))
-      url += "&pm1=" + String(pm1);
+      _json_update += ",\"pm1\":" + String(pm1);
     if (pm2 >= 0 && pm2 <= 1999 && !isnan(pm2))
-      url += "&pm2=" + String(pm2);
+      _json_update += ",\"pm2\":" + String(pm2);
     if (pm10 >= 0 && pm10 <= 1999 && !isnan(pm10))
-      url += "&pm10=" + String(pm10);
+      _json_update += ",\"pm10\":" + String(pm10);
   }
-  if (newio_c)
-    url += "&io_c=" + String(io);
-  else if (newio_s)
-    url += "&io_s=" + String(io);
-
-  String payload = getDataSSL(url);
-
-  if (payload != "")
-  {
-    int16_t newio = Stringparse(payload);
-    if (newio == 32767) // io from server updated
-    {
-      newio_s = false;
-    }
-    else if (newio == 32766) // io from client updated
-    {
-      newio_s = false;
-      newio_c = false;
-    }
-    else if (newio >= 0)
-    {
-      io = newio;
-      iohandle_s();
-      newio_s = true;
-    }
-  }
-
-  if (serverConnected)
-    clearvar();
+  _json_update += "}";
 }
 
-void Iotbundle::DHT()
+void Iotbundle::DHT(uint8_t id)
 {
-  // calculate
-  float humid = var_sum[0] / var_index;
-  float temp = var_sum[1] / var_index;
+  // get project id
+  uint8_t project_id = getProjectID("DHT");
 
-  // create string
-  String url = this->_server + "/api/";
-  url += String(_project_id);
-  url += "/update.php";
-  url += "?user_id=" + String(_user_id);
-  url += "&esp_id=" + _esp_id;
-  if (var_index)
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float humid = var_sum[0][array] / var_index[array];
+  float temp = var_sum[1][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
   { // validate
-    if (humid >= 0 && humid <= 100 && !isnan(humid))
-      url += "&humid=" + String(humid, 1);
-    if (temp >= -40 && temp <= 80 && !isnan(temp))
-      url += "&temp=" + String(temp, 1);
-  }
-  if (newio_c)
-    url += "&io_c=" + String(io);
-  else if (newio_s)
-    url += "&io_s=" + String(io);
-
-  String payload = getDataSSL(url);
-
-  if (payload != "")
-  {
-    int16_t newio = Stringparse(payload);
-    if (newio == 32767) // io from server updated
-    {
-      newio_s = false;
-    }
-    else if (newio == 32766) // io from client updated
-    {
-      newio_s = false;
-      newio_c = false;
-    }
-    else if (newio >= 0)
-    {
-      io = newio;
-      iohandle_s();
-      newio_s = true;
-    }
+    if (humid >= 10 && humid <= 100 && !isnan(humid))
+      _json_update += ",\"humid\":" + String(humid, 1);
+    if (temp >= 5 && temp <= 70 && !isnan(temp))
+      _json_update += ",\"temp\":" + String(temp, 1);
   }
 
-  if (serverConnected)
-    clearvar();
+  _json_update += "}";
 }
 
-void Iotbundle::smartFarmSolar()
+void Iotbundle::smartFarmSolar(uint8_t id)
 {
-  // calculate
-  float humid = var_sum[0] / var_index;
-  float temp = var_sum[1] / var_index;
-  uint16_t vbatt = var_sum[2] / var_index;
+  // get project id
+  uint8_t project_id = getProjectID("smartfarm_solar");
 
-  // create string
-  String url = this->_server + "/api/";
-  url += String(_project_id);
-  url += "/update.php";
-  url += "?user_id=" + String(_user_id);
-  url += "&esp_id=" + _esp_id;
-  if (var_index)
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float humid = var_sum[0][array] / var_index[array];
+  float temp = var_sum[1][array] / var_index[array];
+  uint16_t vbatt = var_sum[2][array] / var_index[array];
+
+  if (var_index[array])
   { // validate
     if (humid > 0 && humid <= 100 && !isnan(humid))
-      url += "&humid=" + String(humid, 1);
+      _json_update += ",\"humid\":" + String(humid, 1);
     if (temp > 0 && temp <= 80 && !isnan(temp))
-      url += "&temp=" + String(temp, 1);
+      _json_update += ",\"temp\":" + String(temp, 1);
     if (vbatt >= 2000 && vbatt <= 8000 && !isnan(vbatt))
-      url += "&vbatt=" + String(vbatt);
+      _json_update += ",\"vbatt\":" + String(vbatt);
   }
-  url += "&valve=";
-  url += (digitalRead(D1)) ? "1" : "0";
-  if (newio_c)
-    url += "&io_c=" + String(io);
-  else if (newio_s)
-    url += "&io_s=" + String(io);
+  _json_update += ",\"valve\":";
+  _json_update += (digitalRead(D1)) ? "1" : "0";
 
-  String payload = getDataSSL(url);
-
-  if (payload != "")
-  {
-    int16_t newio = Stringparse(payload);
-    if (newio == 32767) // io from server updated
-    {
-      newio_s = false;
-    }
-    else if (newio == 32766) // io from client updated
-    {
-      newio_s = false;
-      newio_c = false;
-    }
-    else if (newio >= 0)
-    {
-      io = newio;
-      iohandle_s();
-      newio_s = true;
-    }
-  }
-
-  if (serverConnected)
-    clearvar();
+  _json_update += "}";
 }

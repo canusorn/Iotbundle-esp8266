@@ -1,22 +1,33 @@
+/*
+   -PMS7003-
+   5V - VCC
+   GND - GND
+   D4  - TX
+   D3  - RX(not use in this code)
+
+*/
+
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
+#include <ESP8266WebServer.h>
 #include <IotWebConf.h>
 #include <IotWebConfUsing.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <Wire.h>
 #include <SFE_MicroOLED.h>
-#include <EEPROM.h>
+#include <PMS.h>
 #include <DHT.h>
+#include <SoftwareSerial.h>
+#include <EEPROM.h>
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
-#define PROJECT "DHT"
+#define PROJECT "PM_METER"
 Iotbundle iot(PROJECT);
 
-const char thingName[] = "dht";
+const char thingName[] = "pmmeter";
 const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
@@ -29,18 +40,24 @@ void wifiConnected();
 void configSaved();
 bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper);
 
+SoftwareSerial pmsSerial(D4, D3); // RX,TX
+PMS pms(pmsSerial);
+PMS::DATA data;
+
 #define DHTPIN D7
 // Uncomment whatever type you're using!
-//#define DHTTYPE DHT11   // DHT 11
-#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
+#define DHTTYPE DHT11 // DHT 11
+// #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 DHT dht(DHTPIN, DHTTYPE);
+uint8_t dht_time;
 
 #define PIN_RESET -1
 #define DC_JUMPER 0
 MicroOLED oled(PIN_RESET, DC_JUMPER);
 
 unsigned long previousMillis = 0;
+uint8_t sensordetect;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -72,8 +89,12 @@ String noti;
 void setup()
 {
     Serial.begin(115200);
+    pmsSerial.begin(9600);
     dht.begin();
     Wire.begin();
+
+    // 1.1 เพิ่มโปรเจค DHT
+    iot.addProject("DHT");
 
     //------Display LOGO at start------
     oled.begin();
@@ -143,53 +164,53 @@ void setup()
 
 void loop()
 {
-    // 3 คอยจัดการ และส่งค่าให้เอง
-    iot.handle();
-
     iotWebConf.doLoop();
     server.handleClient();
     MDNS.update();
 
+    // 3 คอยจัดการ และส่งค่าให้เอง
+    iot.handle();
+
+    //------get data from PMS7003------
+    if (pms.read(data))
+    {
+        sensordetect = 0;
+        /*  4.1 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+            และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
+        iot.setProject("PM_METER");
+        iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
+    }
+
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= 2000)
-    { // run every 2 second
+    { // run every 1 second
         previousMillis = currentMillis;
-        //------get data from DHT------
+        dht_time++;
+        display_update(); // update OLED
+        sensordetect ++;
+    }
+
+    if (dht_time >= 2)
+    { // dht read every 2 second
+        dht_time = 0;
         float humid = dht.readHumidity();
         float temp = dht.readTemperature();
 
-        display_update(humid, temp);
+        Serial.print(F("Humidity: "));
+        Serial.print(humid);
+        Serial.print(F("%  Temperature: "));
+        Serial.print(temp);
+        Serial.println(F("°C "));
 
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-            ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
-            ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
+        /*  4.2 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+            และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
+        iot.setProject("DHT");
         iot.update(humid, temp);
     }
 }
 
-void display_update(float humid, float temp)
+void display_update()
 {
-    if (isnan(humid) || isnan(temp)) // if no data from sensor
-    {
-        oled.clear(PAGE);
-        oled.setFontType(0);
-        oled.setCursor(0, 0);
-        oled.printf("-Sensor-\n\nno sensor\ndetect!");
-
-        Serial.println("no sensor detect");
-    }
-    else
-    {
-        //------Update OLED------
-        oled.clear(PAGE);
-        oled.setFontType(0);
-        oled.setCursor(0, 0);
-        oled.println("--DHT--\n\nH: " + String(humid, 1) + " %\n\nT: " + String(temp, 1) + " C");
-
-        // display data in serialmonitor
-        Serial.println("Humidity: " + String(humid) + "%  Temperature: " + String(temp) + "°C ");
-    }
-
     // display status
     iotwebconf::NetworkState curr_state = iotWebConf.getState();
     if (curr_state == iotwebconf::Boot)
@@ -223,7 +244,7 @@ void display_update(float humid, float temp)
         {
             displaytime = 10;
             prev_state = curr_state;
-            noti = "-State-\n\nX  wifi\ndisconnect\ngo AP Mode";
+            noti = "-State-\n\nX wifi\ndisconnect\ngo AP Mode";
         }
     }
     else if (curr_state == iotwebconf::Connecting)
@@ -251,12 +272,12 @@ void display_update(float humid, float temp)
         }
     }
 
-  if (iot.noti != "" && displaytime == 0)
-  {
-    displaytime = 5;
-    noti = iot.noti;
-    iot.noti = "";
-  }
+    if (iot.noti != "" && displaytime == 0)
+    {
+        displaytime = 5;
+        noti = iot.noti;
+        iot.noti = "";
+    }
 
     if (displaytime)
     {
@@ -265,6 +286,31 @@ void display_update(float humid, float temp)
         oled.setCursor(0, 0);
         oled.print(noti);
         Serial.println(noti);
+    }
+    //------Update OLED------
+    else if (sensordetect <= 5)
+    {
+        oled.clear(PAGE);
+        oled.setFontType(0);
+        oled.setCursor(0, 0);
+        oled.println("PM(ug/m3)");
+        oled.setCursor(0, 15);
+        oled.print(" 1.0 : ");
+        oled.print(data.PM_AE_UG_1_0);
+        oled.setCursor(0, 26);
+        oled.print(" 2.5 : ");
+        oled.print(data.PM_AE_UG_2_5);
+        oled.setCursor(0, 37);
+        oled.print("10.0 : ");
+        oled.print(data.PM_AE_UG_10_0);
+    }
+    // if no data from sensor
+    else
+    {
+        oled.clear(PAGE);
+        oled.setFontType(0);
+        oled.setCursor(0, 0);
+        oled.printf("-Sensor-\n\nno sensor\ndetect!");
     }
 
     // display state
@@ -293,6 +339,21 @@ void display_update(float humid, float temp)
         oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
     oled.display();
+
+    //------print on serial moniter------
+    if (sensordetect)
+    {
+        Serial.print("PM 1.0 (ug/m3): ");
+        Serial.println(data.PM_AE_UG_1_0);
+        Serial.print("PM 2.5 (ug/m3): ");
+        Serial.println(data.PM_AE_UG_2_5);
+        Serial.print("PM 10.0 (ug/m3): ");
+        Serial.println(data.PM_AE_UG_10_0);
+    }
+    else
+    {
+        Serial.println("no sensor detect");
+    }
 }
 
 void handleRoot()
