@@ -182,7 +182,7 @@ void loop()
     }
 
     unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= 2000)
+    if (currentMillis - previousMillis >= 1000)
     { // run every 1 second
         previousMillis = currentMillis;
         dht_time++;
