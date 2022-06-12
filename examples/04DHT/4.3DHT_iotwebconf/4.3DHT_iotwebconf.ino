@@ -175,12 +175,6 @@ void loop()
     iot.update(humid, temp);
   }
 
-  if (iotWebConf.getState() == iotwebconf::OnLine && !ota_updated)
-  {
-    Serial.println("OTA updating...");
-    ota_updated = true;
-    iot.otaUpdate();
-  }
 }
 
 void display_update()
