@@ -266,7 +266,7 @@ void Iotbundle::updateProject()
     }
   }
 
-    clearvar();
+  clearvar();
 }
 
 int8_t Iotbundle::projectCount()
@@ -755,6 +755,24 @@ int16_t Iotbundle::Stringparse(String payload)
   }
   else
     return res_code.toInt();
+}
+
+void Iotbundle::otaUpdate()
+{
+  WiFiClient client;
+  t_httpUpdate_return ret = ESPhttpUpdate.update(client, "192.168.2.50", 80, "/api/ota/esp8266.php", "optional current version string here");
+  switch (ret)
+  {
+  case HTTP_UPDATE_FAILED:
+    Serial.println("[update] Update failed.");
+    break;
+  case HTTP_UPDATE_NO_UPDATES:
+    Serial.println("[update] Update no Update.");
+    break;
+  case HTTP_UPDATE_OK:
+    Serial.println("[update] Update ok."); // may not be called since we reboot the ESP
+    break;
+  }
 }
 
 void Iotbundle::acMeter(uint8_t id)

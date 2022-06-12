@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
 
 #define IOTBUNDLE_DEBUG
@@ -129,6 +130,9 @@ public:
 
   // fouce update data before sleep
   void fouceUpdate(bool settolowall = false);
+
+  // ota update
+  void otaUpdate();
 };
 
 // for set debug mode
