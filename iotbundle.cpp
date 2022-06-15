@@ -753,6 +753,10 @@ int16_t Iotbundle::Stringparse(String payload)
     newio_c = false;
     return 0;
   }
+  else if (res_code.toInt() == 32765) // check ota update
+  {
+    otaUpdate();
+  }
   else
     return res_code.toInt();
 }
@@ -820,7 +824,7 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   }
   else // use custom url
   {
-     url = url + "?p_id=" + project;
+    url = url + "?p_id=" + project;
     if (optional_version != "")
       url += "&optional_version=" + optional_version;
 
