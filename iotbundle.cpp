@@ -773,6 +773,7 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   ESPhttpUpdate.onError([](int err)
                         { Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err); });
 
+  // get project id string
   String project = "";
   for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
   {
@@ -786,6 +787,7 @@ void Iotbundle::otaUpdate(String optional_version, String url)
     }
   }
 
+  // get version int
   String v_int = "";
   uint8_t count = this->version.length();
   for (int i = 0; i < count; i++)
@@ -796,50 +798,47 @@ void Iotbundle::otaUpdate(String optional_version, String url)
     }
   }
 
-  // version format   project_id & version & optional_sensor
-  String version_payload;
-  if (optional_version.length() > 0)
-  {
-    version_payload = project + '&' + String(v_int.toInt()) + '&' + String(optional_version);
-  }
-  else
-  {
-    version_payload = project + '&' + String(v_int.toInt());
-  }
-t_httpUpdate_return ret;
+  t_httpUpdate_return ret;
   if (url.length() == 0) // use default url
   {
+
+    url = _server + "/ota/esp8266.php" + "?p_id=" + project;
+    if (optional_version != "")
+      url += "&optional_version=" + optional_version;
+
     if (_server[4] == 's')
     {
       WiFiClientSecure client;
       client.setInsecure();
-      ret = ESPhttpUpdate.update(client, url, version_payload);
+      ret = ESPhttpUpdate.update(client, url, String(v_int.toInt()));
     }
     else
     {
       WiFiClient client;
-      ret = ESPhttpUpdate.update(client, url, version_payload);
+      ret = ESPhttpUpdate.update(client, url, String(v_int.toInt()));
     }
-
-    url = _server + "/ota/esp8266.php";
   }
   else // use custom url
   {
+     url = url + "?p_id=" + project;
+    if (optional_version != "")
+      url += "&optional_version=" + optional_version;
+
     if (url[4] == 's')
     {
       WiFiClientSecure client;
       client.setInsecure();
-      ret = ESPhttpUpdate.update(client, url, version_payload);
+      ret = ESPhttpUpdate.update(client, url, String(v_int.toInt()));
     }
     else
     {
       WiFiClient client;
-      ret = ESPhttpUpdate.update(client, url, version_payload);
+      ret = ESPhttpUpdate.update(client, url, String(v_int.toInt()));
     }
     // Serial.println("custom url:" + url);
   }
 
-  Serial.println("url:" + url);
+  // Serial.println("url:" + url);
   // t_httpUpdate_return ret = ESPhttpUpdate.update(client, url, version_payload);
   // t_httpUpdate_return ret = ESPhttpUpdate.update(client, url);
 

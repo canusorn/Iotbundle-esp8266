@@ -40,7 +40,7 @@ void setup()
     }
 
     // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-    iot.begin(email, pass, "http://192.168.2.50");
+    iot.begin(email, pass);
 }
 
 void update_started()
@@ -84,7 +84,7 @@ void loop()
             ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
         iot.update(humid, temp);
         delay(100);
-        iot.otaUpdate(String(DHTTYPE), "https://iotkiddie.com/ota/4.3DHT11_iotwebconf.ino.d1_mini.bin");  // addition version (DHT11, DHT22, DHT21)  ,  custom url
+        iot.otaUpdate(String(DHTTYPE));  // addition version (DHT11, DHT22, DHT21)  ,  custom url
 
         // WiFiClientSecure client;
         // client.setInsecure();
