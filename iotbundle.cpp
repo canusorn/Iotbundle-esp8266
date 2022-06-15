@@ -797,32 +797,51 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   }
 
   // version format   project_id & version & optional_sensor
-   String version_payload;
+  String version_payload;
   if (optional_version.length() > 0)
   {
-     version_payload = project + '&' + String(v_int.toInt()) + '&' + String(optional_version);
+    version_payload = project + '&' + String(v_int.toInt()) + '&' + String(optional_version);
   }
   else
   {
-     version_payload = project + '&' + String(v_int.toInt());
+    version_payload = project + '&' + String(v_int.toInt());
   }
-
-  t_httpUpdate_return ret;
+t_httpUpdate_return ret;
   if (url.length() == 0) // use default url
   {
-    String url;
-    if (_server[4] == 's') // use https'
-      url = _server.substring(7, _server.length());
-    else // use http
-      url = _server.substring(6, _server.length());
+    if (_server[4] == 's')
+    {
+      WiFiClientSecure client;
+      client.setInsecure();
+      ret = ESPhttpUpdate.update(client, url, version_payload);
+    }
+    else
+    {
+      WiFiClient client;
+      ret = ESPhttpUpdate.update(client, url, version_payload);
+    }
 
-    ret = ESPhttpUpdate.update(client, url, 80, "/ota/esp8266.php", version_payload);
+    url = _server + "/ota/esp8266.php";
   }
   else // use custom url
   {
+    if (url[4] == 's')
+    {
+      WiFiClientSecure client;
+      client.setInsecure();
+      ret = ESPhttpUpdate.update(client, url, version_payload);
+    }
+    else
+    {
+      WiFiClient client;
+      ret = ESPhttpUpdate.update(client, url, version_payload);
+    }
     // Serial.println("custom url:" + url);
-    t_httpUpdate_return ret = ESPhttpUpdate.update(client, url, version_payload);
   }
+
+  Serial.println("url:" + url);
+  // t_httpUpdate_return ret = ESPhttpUpdate.update(client, url, version_payload);
+  // t_httpUpdate_return ret = ESPhttpUpdate.update(client, url);
 
   // t_httpUpdate_return ret = ESPhttpUpdate.update(client, "192.168.2.50", 80, "/ota/esp8266.php", version);
   switch (ret)

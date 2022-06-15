@@ -84,24 +84,24 @@ void loop()
             ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
         iot.update(humid, temp);
         delay(100);
-        // iot.otaUpdate(String(DHTTYPE), "http://192.168.2.50/ota/esp8266.php");  // addition version (DHT11, DHT22, DHT21)  ,  custom url
+        iot.otaUpdate(String(DHTTYPE), "https://iotkiddie.com/ota/4.3DHT11_iotwebconf.ino.d1_mini.bin");  // addition version (DHT11, DHT22, DHT21)  ,  custom url
 
-        WiFiClientSecure client;
-        client.setInsecure();
-        t_httpUpdate_return ret = ESPhttpUpdate.update(client, "https://iotkiddie.com/ota/4.3DHT11_iotwebconf.ino.d1_mini.bin");
-        switch (ret)
-        {
-        case HTTP_UPDATE_FAILED:
-            Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-            break;
+        // WiFiClientSecure client;
+        // client.setInsecure();
+        // t_httpUpdate_return ret = ESPhttpUpdate.update(client, "https://iotkiddie.com/ota/4.3DHT11_iotwebconf.ino.d1_mini.bin");
+        // switch (ret)
+        // {
+        // case HTTP_UPDATE_FAILED:
+        //     Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+        //     break;
 
-        case HTTP_UPDATE_NO_UPDATES:
-            Serial.println("HTTP_UPDATE_NO_UPDATES");
-            break;
+        // case HTTP_UPDATE_NO_UPDATES:
+        //     Serial.println("HTTP_UPDATE_NO_UPDATES");
+        //     break;
 
-        case HTTP_UPDATE_OK:
-            Serial.println("HTTP_UPDATE_OK");
-            break;
-        }
+        // case HTTP_UPDATE_OK:
+        //     Serial.println("HTTP_UPDATE_OK");
+        //     break;
+        // }
     }
 }
