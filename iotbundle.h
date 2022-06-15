@@ -11,7 +11,7 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
 
-#define IOTBUNDLE_DEBUG
+// #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 #define VERSION "0.0.6"
 
@@ -132,7 +132,7 @@ public:
   void fouceUpdate(bool settolowall = false);
 
   // ota update
-  void otaUpdate();
+  void otaUpdate(String optional_version = "",String url = "");
 };
 
 // for set debug mode

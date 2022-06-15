@@ -757,10 +757,74 @@ int16_t Iotbundle::Stringparse(String payload)
     return res_code.toInt();
 }
 
-void Iotbundle::otaUpdate()
+void Iotbundle::otaUpdate(String optional_version, String url)
 {
   WiFiClient client;
-  t_httpUpdate_return ret = ESPhttpUpdate.update(client, "192.168.2.50", 80, "/api/ota/esp8266.php", "optional current version string here");
+
+  ESPhttpUpdate.onStart([]()
+                        { Serial.println("CALLBACK:  HTTP update process started"); });
+
+  ESPhttpUpdate.onEnd([]()
+                      { Serial.println("CALLBACK:  HTTP update process finished"); });
+
+  ESPhttpUpdate.onProgress([](int cur, int total)
+                           { Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total); });
+
+  ESPhttpUpdate.onError([](int err)
+                        { Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err); });
+
+  String project = "";
+  for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) >= 0)
+    {
+      if (i != 0)
+      {
+        project += ",";
+      }
+      project += String(_project_id[i]);
+    }
+  }
+
+  String v_int = "";
+  uint8_t count = this->version.length();
+  for (int i = 0; i < count; i++)
+  {
+    if (this->version[i] != '.')
+    {
+      v_int += this->version[i];
+    }
+  }
+
+  // version format   project_id & version & optional_sensor
+   String version_payload;
+  if (optional_version.length() > 0)
+  {
+     version_payload = project + '&' + String(v_int.toInt()) + '&' + String(optional_version);
+  }
+  else
+  {
+     version_payload = project + '&' + String(v_int.toInt());
+  }
+
+  t_httpUpdate_return ret;
+  if (url.length() == 0) // use default url
+  {
+    String url;
+    if (_server[4] == 's') // use https'
+      url = _server.substring(7, _server.length());
+    else // use http
+      url = _server.substring(6, _server.length());
+
+    ret = ESPhttpUpdate.update(client, url, 80, "/ota/esp8266.php", version_payload);
+  }
+  else // use custom url
+  {
+    // Serial.println("custom url:" + url);
+    t_httpUpdate_return ret = ESPhttpUpdate.update(client, url, version_payload);
+  }
+
+  // t_httpUpdate_return ret = ESPhttpUpdate.update(client, "192.168.2.50", 80, "/ota/esp8266.php", version);
   switch (ret)
   {
   case HTTP_UPDATE_FAILED:
