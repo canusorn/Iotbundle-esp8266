@@ -84,6 +84,8 @@ void loop()
             ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
         iot.update(humid, temp);
         delay(100);
+
+        if(iot.need_ota)
         iot.otaUpdate(String(DHTTYPE));  // addition version (DHT11, DHT22, DHT21)  ,  custom url
 
         // WiFiClientSecure client;

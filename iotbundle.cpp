@@ -37,8 +37,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v6/connect.php";
-  this->_update_url = this->_server + "/api/v6/update.php";
+  this->_login_url = this->_server + "/api/v7/connect.php";
+  this->_update_url = this->_server + "/api/v7/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -755,7 +755,8 @@ int16_t Iotbundle::Stringparse(String payload)
   }
   else if (res_code.toInt() == 32765) // check ota update
   {
-    otaUpdate();
+    need_ota = true;
+    // otaUpdate();
   }
   else
     return res_code.toInt();
