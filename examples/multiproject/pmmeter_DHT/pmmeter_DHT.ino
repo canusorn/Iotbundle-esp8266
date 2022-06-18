@@ -206,6 +206,10 @@ void loop()
             และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
         iot.setProject("DHT");
         iot.update(humid, temp);
+
+            // check need ota update flag from server
+    if (iot.need_ota)
+      iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
     }
 }
 
