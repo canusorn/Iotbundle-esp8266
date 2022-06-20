@@ -88,22 +88,5 @@ void loop()
         if(iot.need_ota)
         iot.otaUpdate(String(DHTTYPE));  // addition version (DHT11, DHT22, DHT21)  ,  custom url
 
-        // WiFiClientSecure client;
-        // client.setInsecure();
-        // t_httpUpdate_return ret = ESPhttpUpdate.update(client, "https://iotkiddie.com/ota/4.3DHT11_iotwebconf.ino.d1_mini.bin");
-        // switch (ret)
-        // {
-        // case HTTP_UPDATE_FAILED:
-        //     Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
-        //     break;
-
-        // case HTTP_UPDATE_NO_UPDATES:
-        //     Serial.println("HTTP_UPDATE_NO_UPDATES");
-        //     break;
-
-        // case HTTP_UPDATE_OK:
-        //     Serial.println("HTTP_UPDATE_OK");
-        //     break;
-        // }
     }
 }
