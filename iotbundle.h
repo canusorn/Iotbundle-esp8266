@@ -11,9 +11,9 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
 
-// #define IOTBUNDLE_DEBUG
+#define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.6"
+#define VERSION "0.0.7"
 
 class Iotbundle
 {
@@ -106,6 +106,9 @@ public:
 
   // version
   String version = VERSION;
+
+  // need ota update flag
+  bool need_ota = false;
 
   // connect and login
   void begin(String email, String pass, String server = "https://iotkiddie.com");

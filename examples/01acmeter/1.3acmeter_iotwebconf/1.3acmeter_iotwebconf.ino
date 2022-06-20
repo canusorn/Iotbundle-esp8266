@@ -177,6 +177,10 @@ void loop()
     เช่น ต้องการส่งแค่ voltage current power
     iot.update(voltage, current, power, NAN, NAN, NAN);    */
     iot.update(voltage, current, power, energy, frequency, pf);
+
+        // check need ota update flag from server
+    if (iot.need_ota)
+      iot.otaUpdate(); // addition version (DHT11, DHT22, DHT21)  ,  custom url
   }
 }
 

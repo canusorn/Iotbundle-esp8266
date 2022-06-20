@@ -37,8 +37,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v6/connect.php";
-  this->_update_url = this->_server + "/api/v6/update.php";
+  this->_login_url = this->_server + "/api/v7/connect.php";
+  this->_update_url = this->_server + "/api/v7/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -753,6 +753,11 @@ int16_t Iotbundle::Stringparse(String payload)
     newio_c = false;
     return 0;
   }
+  else if (res_code.toInt() == 32765) // check ota update
+  {
+    need_ota = true;
+    // otaUpdate();
+  }
   else
     return res_code.toInt();
 }
@@ -820,7 +825,7 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   }
   else // use custom url
   {
-     url = url + "?p_id=" + project;
+    url = url + "?p_id=" + project;
     if (optional_version != "")
       url += "&optional_version=" + optional_version;
 

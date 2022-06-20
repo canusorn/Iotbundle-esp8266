@@ -166,6 +166,10 @@ void loop()
         ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
     iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
+
+        // check need ota update flag from server
+    if (iot.need_ota)
+      iot.otaUpdate(); // addition version (DHT11, DHT22, DHT21)  ,  custom url
   }
 
   unsigned long currentMillis = millis();
