@@ -258,12 +258,16 @@ void Iotbundle::updateProject()
 
   String payload = postData(_json_update, _update_url);
   _json_update = "";
-  if (payload != "")
+  if (payload != "" && serverConnected)
   {
     int16_t res_code = Stringparse(payload);
     if (res_code >= 0)
     {
     }
+  }
+  else if (payload != "" && !serverConnected)
+  {
+        this->noti = payload;  // display no oled
   }
 
   clearvar();
@@ -420,6 +424,7 @@ String Iotbundle::getHttp(String data)
     else
     {
       DEBUGLN("[HTTP] GET... failed, error:" + http.errorToString(httpCode));
+      payload = http.errorToString(httpCode);
       serverConnected = false;
     }
 
@@ -434,6 +439,7 @@ String Iotbundle::getHttp(String data)
   {
     DEBUG("[HTTP} Unable to connect\n");
     serverConnected = false;
+    payload = "Unable\nto\nconnect";
   }
   return payload;
 }
@@ -486,6 +492,7 @@ String Iotbundle::getHttps(String data)
     else
     {
       DEBUGLN("[HTTPS] GET... failed, error: " + https.errorToString(httpCode));
+      payload = https.errorToString(httpCode);
       serverConnected = false;
     }
 
@@ -500,6 +507,7 @@ String Iotbundle::getHttps(String data)
   {
     DEBUGLN("[HTTPS] Unable to connect");
     serverConnected = false;
+    payload = "Unable\nto\nconnect";
   }
   // }
 
@@ -549,6 +557,7 @@ String Iotbundle::postHttp(String data, String url)
     else
     {
       DEBUG("[HTTP] POST... failed, error: " + http.errorToString(httpCode));
+      payload = http.errorToString(httpCode);
       serverConnected = false;
     }
 
@@ -563,6 +572,7 @@ String Iotbundle::postHttp(String data, String url)
   {
     DEBUG("[HTTP} Unable to connect\n");
     serverConnected = false;
+    payload = "Unable\nto\nconnect";
   }
   return payload;
 }
@@ -612,6 +622,7 @@ String Iotbundle::postHttps(String data, String url)
     else
     {
       DEBUG("[HTTP] POST... failed, error: " + https.errorToString(httpCode));
+      payload = https.errorToString(httpCode);
       serverConnected = false;
     }
 
@@ -625,6 +636,7 @@ String Iotbundle::postHttps(String data, String url)
   else
   {
     DEBUG("[HTTPS] Unable to connect\n");
+    payload = "Unable\nto\nconnect";
     serverConnected = false;
   }
   return payload;

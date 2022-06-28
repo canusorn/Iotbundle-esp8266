@@ -326,7 +326,7 @@ void displayValue()
 
   if (iot.noti != "" && displaytime == 0)
   {
-    displaytime = 5;
+    displaytime = 3;
     noti = iot.noti;
     iot.noti = "";
   }
