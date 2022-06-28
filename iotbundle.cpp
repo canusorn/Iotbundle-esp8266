@@ -8,6 +8,10 @@ Iotbundle::Iotbundle(String project)
   // set all allow pin to low
   init_io();
 
+  // read start io
+  readio();
+  previo = io;
+
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
 }
@@ -272,8 +276,8 @@ void Iotbundle::updateProject()
   else
   {
     _noConnect++;
-     if (payload != "" && _noConnect >= 6)  // if can't connect about 30 sec
-    this->noti = payload; // display no oled
+    if (payload != "" && _noConnect >= 6) // if can't connect about 30 sec
+      this->noti = payload;               // display no oled
   }
 
   clearvar();
@@ -655,9 +659,12 @@ bool Iotbundle::status()
 
 void Iotbundle::iohandle_s()
 { // handle io from server
-  DEBUGLN("io:" + String(io, BIN));
+  // DEBUGLN("io:" + String(io, BIN));
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint16_t useio = io ^ previo;                           // change only difference io
+  DEBUGLN("newio:\t" + String(io, BIN));
+  DEBUGLN("previo:\t" + String(previo, BIN));
+  DEBUGLN("useio:\t" + String(useio, BIN));
   DEBUG("writing io -> ");
   for (int i = 0; i < 9; i++)
   {
