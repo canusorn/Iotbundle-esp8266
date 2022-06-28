@@ -258,16 +258,22 @@ void Iotbundle::updateProject()
 
   String payload = postData(_json_update, _update_url);
   _json_update = "";
-  if (payload != "" && serverConnected)
+  if (serverConnected)
   {
-    int16_t res_code = Stringparse(payload);
-    if (res_code >= 0)
+    _noConnect = 0;
+    if (payload != "")
     {
+      int16_t res_code = Stringparse(payload);
+      if (res_code >= 0)
+      {
+      }
     }
   }
-  else if (payload != "" && !serverConnected)
+  else
   {
-        this->noti = payload;  // display no oled
+    _noConnect++;
+     if (payload != "" && _noConnect >= 6)  // if can't connect about 30 sec
+    this->noti = payload; // display no oled
   }
 
   clearvar();
