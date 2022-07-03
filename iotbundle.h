@@ -34,6 +34,7 @@ private:
   bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
   uint16_t _AllowIO = 0b111111111;      // pin to allow to write
+  uint8_t _noConnect;                   // sample no connect to server
   String _json_update;                  // JSON update data
   String _login_url;
   String _update_url;

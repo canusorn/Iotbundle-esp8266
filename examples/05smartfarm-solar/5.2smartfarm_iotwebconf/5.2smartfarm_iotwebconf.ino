@@ -40,6 +40,7 @@ unsigned long previousMillis = 0, valveOnProtect;
 uint8_t dhtSample;
 uint16_t valveOnTime;
 bool valveOnFlag;
+uint16_t timer_nointernet;
 
 DNSServer dnsServer;
 WebServer server(80);
@@ -213,15 +214,37 @@ void loop()
                 delay(2000);
                 ESP.deepSleep(10 * 60e6); // sleep for 10 minutes
             }
+            
+            iotwebconf::NetworkState curr_state = iotWebConf.getState();
+            if (curr_state == iotwebconf::OnLine)
+            {
+                if (iot.serverConnected)
+                {
+                    timer_nointernet = 0;
+                }
+                else
+                {
+                    timer_nointernet++;
+                }
+
+                // reconnect wifi if can't connect server
+                if (timer_nointernet >= 300)
+                {
+                    iotWebConf.goOffLine();
+                    timer_nointernet = 0;
+                    delay(500);
+                    iotWebConf.goOnLine(false);
+                }
+            }
         }
         /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
             ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
         iot.update(humid, temp, vbatt);
 
-            // check need ota update flag from server
-    if (iot.need_ota)
-      iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
+        // check need ota update flag from server
+        if (iot.need_ota)
+            iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
     }
 }
 

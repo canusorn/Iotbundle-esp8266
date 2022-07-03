@@ -71,6 +71,7 @@ iotwebconf::NetworkState prev_state = iotwebconf::Boot;
 uint8_t displaytime;
 String noti;
 bool ota_updated = false;
+uint16_t timer_nointernet;
 
 void setup()
 {
@@ -174,7 +175,6 @@ void loop()
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
     iot.update(humid, temp);
 
-
     // check need ota update flag from server
     if (iot.need_ota)
       iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
@@ -267,7 +267,7 @@ void display_update()
 
   if (iot.noti != "" && displaytime == 0)
   {
-    displaytime = 5;
+    displaytime = 3;
     noti = iot.noti;
     iot.noti = "";
   }
@@ -299,14 +299,29 @@ void display_update()
   else if (curr_state == iotwebconf::OnLine)
   {
     if (iot.serverConnected)
+    {
       oled.drawIcon(56, 0, 8, 8, wifi_on, sizeof(wifi_on), true);
+      timer_nointernet = 0;
+    }
     else
+    {
       oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
+      timer_nointernet++;
+    }
   }
   else if (curr_state == iotwebconf::OffLine)
     oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
   oled.display();
+
+  // reconnect wifi if can't connect server
+  if (timer_nointernet >= 300)
+  {
+    iotWebConf.goOffLine();
+    timer_nointernet = 0;
+    delay(500);
+    iotWebConf.goOnLine(false);
+  }
 }
 
 void handleRoot()
