@@ -72,6 +72,7 @@ uint8_t displaytime;
 String noti;
 bool ota_updated = false;
 uint16_t timer_nointernet;
+
 void setup()
 {
   Serial.begin(115200);
@@ -313,10 +314,11 @@ void display_update()
 
   oled.display();
 
+  // reconnect wifi if can't connect server
   if (timer_nointernet >= 300)
   {
     iotWebConf.goOffLine();
-    timer_nointernet=0;
+    timer_nointernet = 0;
     delay(500);
     iotWebConf.goOnLine(false);
   }

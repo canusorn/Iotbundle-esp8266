@@ -76,6 +76,7 @@ uint8_t t_connecting;
 iotwebconf::NetworkState prev_state = iotwebconf::Boot;
 uint8_t displaytime;
 String noti;
+uint16_t timer_nointernet;
 
 void setup()
 {
@@ -167,7 +168,7 @@ void loop()
         ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN   */
     iot.update(data.PM_AE_UG_1_0, data.PM_AE_UG_2_5, data.PM_AE_UG_10_0);
 
-        // check need ota update flag from server
+    // check need ota update flag from server
     if (iot.need_ota)
       iot.otaUpdate(); // addition version (DHT11, DHT22, DHT21)  ,  custom url
   }
@@ -260,7 +261,7 @@ void display_update()
     Serial.println(noti);
   }
   //------Update OLED------
-  else if (sensordetect<=5)
+  else if (sensordetect <= 5)
   {
     oled.clear(PAGE);
     oled.setFontType(0);
@@ -303,14 +304,29 @@ void display_update()
   else if (curr_state == iotwebconf::OnLine)
   {
     if (iot.serverConnected)
+    {
       oled.drawIcon(56, 0, 8, 8, wifi_on, sizeof(wifi_on), true);
+      timer_nointernet = 0;
+    }
     else
+    {
       oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
+      timer_nointernet++;
+    }
   }
   else if (curr_state == iotwebconf::OffLine)
     oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
   oled.display();
+
+  // reconnect wifi if can't connect server
+  if (timer_nointernet >= 300)
+  {
+    iotWebConf.goOffLine();
+    timer_nointernet = 0;
+    delay(500);
+    iotWebConf.goOnLine(false);
+  }
 
   //------print on serial moniter------
   if (sensordetect)
