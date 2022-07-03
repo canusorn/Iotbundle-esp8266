@@ -267,10 +267,11 @@ void Iotbundle::updateProject()
     _noConnect = 0;
     if (payload != "")
     {
-      int16_t res_code = Stringparse(payload);
-      if (res_code >= 0)
-      {
-      }
+      Stringparse(payload);
+      // int16_t res_code = Stringparse(payload);
+      // if (res_code >= 0)
+      // {
+      // }
     }
   }
   else
@@ -735,56 +736,83 @@ void Iotbundle::init_io()
   DEBUGLN();
 }
 
-int16_t Iotbundle::Stringparse(String payload)
+void Iotbundle::Stringparse(String payload)
 {
   int str_len = payload.length() + 1;
   char buff[str_len];
   payload.toCharArray(buff, str_len);
 
-  int j = 0;
-  String res_code, io_s_str;
+  // response string
+  String res_data[10];
+  int8_t res_index = -1;
 
+  // split String with '&'
   for (int i = 0; i < str_len; i++)
   {
-    if (j == 0)
-      res_code += buff[i];
-    else if (j == 1)
-      io_s_str += buff[i];
-
     if (buff[i] == '&')
-      j++;
+    {
+      res_index++;
+      i++;
+    }
+
+    res_data[res_index] += buff[i];
   }
 
-  if (res_code.toInt() == 0) // have error
+  // code response
+  res_index = 0;
+  int j = 0;
+  String res_code, res_value;
+
+  // split key=value with '='
+  while (res_data[res_index] != "")
   {
-    Serial.println("!error:" + io_s_str);
-    return -1;
+    // DEBUGLN("res_data[" + String(res_index) + "] = " + res_data[res_index]);
+    for (int i = 0; i < res_data[res_index].length() + 1; i++)
+    {
+      if (res_data[res_index][i] == '=')
+      {
+        j++;
+        i++;
+      }
+
+      // DEBUGLN(res_data[res_index][i]);
+      if (j == 0)
+        res_code += res_data[res_index][i];
+      else if (j == 1)
+        res_value += res_data[res_index][i];
+    }
+
+    DEBUGLN("res_code : " + res_code + '=' + res_value);
+
+    if (res_code.toInt() == 0) // have error
+    {
+      Serial.println("!error:" + res_value);
+    }
+    else if (res_code.toInt() == 1) // new io form server
+    {
+      io = res_value.toInt();
+      iohandle_s();
+      newio_s = true;
+    }
+    else if (res_code.toInt() == 32767) // io from server updated
+    {
+      newio_s = false;
+    }
+    else if (res_code.toInt() == 32766) // io from client updated
+    {
+      newio_s = false;
+      newio_c = false;
+    }
+    else if (res_code.toInt() == 32765) // check ota update
+    {
+      need_ota = true;
+    }
+
+    res_code = "";
+    res_value = "";
+    res_index++;
+    j = 0;
   }
-  else if (res_code.toInt() == 1) // new io form server
-  {
-    io = io_s_str.toInt();
-    iohandle_s();
-    newio_s = true;
-    return 0;
-  }
-  else if (res_code.toInt() == 32767) // io from server updated
-  {
-    newio_s = false;
-    return 0;
-  }
-  else if (res_code.toInt() == 32766) // io from client updated
-  {
-    newio_s = false;
-    newio_c = false;
-    return 0;
-  }
-  else if (res_code.toInt() == 32765) // check ota update
-  {
-    need_ota = true;
-    // otaUpdate();
-  }
-  else
-    return res_code.toInt();
 }
 
 void Iotbundle::otaUpdate(String optional_version, String url)
