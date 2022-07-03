@@ -314,7 +314,12 @@ void display_update()
   oled.display();
 
   if (timer_nointernet >= 300)
-    reboot();
+  {
+    iotWebConf.goOffLine();
+    timer_nointernet=0;
+    delay(500);
+    iotWebConf.goOnLine(false);
+  }
 }
 
 void handleRoot()
