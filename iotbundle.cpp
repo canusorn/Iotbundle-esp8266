@@ -41,8 +41,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v7/connect.php";
-  this->_update_url = this->_server + "/api/v7/update.php";
+  this->_login_url = this->_server + "/api/v8/connect.php";
+  this->_update_url = this->_server + "/api/v8/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -256,6 +256,17 @@ void Iotbundle::updateProject()
   else if (newio_s)
     _json_update += ",\"io_s\":" + String(io);
 
+  if (timer_s) // request timer from server
+  {
+    _json_update += ",\"timer_s\":1";
+    // timer_s = false;
+  }
+  else if (timer_c) // timer from server updated
+  {
+    _json_update += ",\"timer_c\":1";
+    timer_c = false;
+  }
+
   _json_update += "}";
 
   DEBUGLN("sending data to server");
@@ -268,10 +279,6 @@ void Iotbundle::updateProject()
     if (payload != "")
     {
       Stringparse(payload);
-      // int16_t res_code = Stringparse(payload);
-      // if (res_code >= 0)
-      // {
-      // }
     }
   }
   else
@@ -782,7 +789,7 @@ void Iotbundle::Stringparse(String payload)
         res_value += res_data[res_index][i];
     }
 
-    DEBUGLN("res_code : " + res_code + '=' + res_value);
+    DEBUGLN("res_code : " + res_code + " = " + res_value);
 
     if (res_code.toInt() == 0) // have error
     {
@@ -807,12 +814,22 @@ void Iotbundle::Stringparse(String payload)
     {
       need_ota = true;
     }
-
+    else if (res_code.toInt() == 32764) // check ota update
+    {
+      Timerparse(res_value);
+    }
     res_code = "";
     res_value = "";
     res_index++;
     j = 0;
   }
+}
+
+void Iotbundle::Timerparse(String timer)
+{
+  //  format &32764={pin}:{start}:{interval}:{active h-l},{pin}:{start}:{interval}:{active h-l}
+  timer_c = true;
+  timer_s = false;
 }
 
 void Iotbundle::otaUpdate(String optional_version, String url)
