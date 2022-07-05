@@ -842,9 +842,72 @@ void Iotbundle::Stringparse(String payload)
 
 void Iotbundle::Timerparse(String timer)
 {
-  //  format &32764={pin}:{start}:{interval}:{active h-l},{pin}:{start}:{interval}:{active h-l}
+  //  format {pin}:{start}:{interval}:{active h-l},{pin}:{start}:{interval}:{active h-l}
   timer_c = true;
   timer_s = false;
+  int8_t j = 0, timer_index = 0;
+  String buff_timer = "";
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  for (int i = 0; i < timer.length() + 1; i++)
+  {
+    if (timer[i] == ',')
+    {
+      i++;
+      if (j == 3)
+      {
+        timer_active[timer_index] = buff_timer.toInt();
+      }
+      j = 0;
+      timer_index++;
+      buff_timer = "";
+    }
+    else if (timer[i] == ':')
+    {
+      if (j == 0)
+      {
+        timer_pin[timer_index] = wemosGPIO[buff_timer.toInt()];
+      }
+      else if (j == 1)
+      {
+        timer_start[timer_index] = buff_timer.toInt();
+      }
+      else if (j == 2)
+      {
+        timer_interval[timer_index] = buff_timer.toInt();
+      }
+      else if (j == 3)
+      {
+        timer_active[timer_index] = buff_timer.toInt();
+      }
+
+      buff_timer = "";
+      j++;
+      i++;
+    }
+    else if (i == timer.length())
+    {
+      if (j == 3)
+      {
+        timer_active[timer_index] = buff_timer.toInt();
+      }
+    }
+
+    buff_timer += timer[i];
+
+    // DEBUGLN(timer[i]);
+    // if (j == 0)
+    //   res_code += timer[i];
+    // else if (j == 1)
+    // res_value += timer[i];
+  }
+
+  uint8_t k = 0;
+
+  while (timer_interval[k])
+  {
+    DEBUGLN("pin:" + (String)timer_pin[k] + ", start:" + (String)timer_start[k] + ", interval:" + (String)timer_interval[k] + ", active:" + (String)timer_active[k]);
+    k++;
+  }
 }
 
 void Iotbundle::otaUpdate(String optional_version, String url)
