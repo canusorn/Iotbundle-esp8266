@@ -90,6 +90,9 @@ private:
   // parse timer from response
   void Timerparse(String timer);
 
+  // timer handle
+  void TimerHandle();
+
   // get project id form name
   uint8_t getProjectID(String project);
 

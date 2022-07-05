@@ -10,7 +10,7 @@ Iotbundle::Iotbundle(String project)
 
   // read start io
   readio();
-  previo = io;
+  // previo = io;
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
@@ -194,10 +194,6 @@ void Iotbundle::handle()
     {
       daytimestamp = daytimestamp % 86400;
     }
-    uint8_t k = 0;
-    while (timer_interval[k])
-    {
-        }
 
     DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
@@ -218,6 +214,31 @@ void Iotbundle::handle()
         }
       }
     }
+
+    TimerHandle();
+  }
+}
+
+void Iotbundle::TimerHandle()
+{
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  uint8_t k = 0;
+  while (timer_interval[k])
+  {
+    if (bitRead(_AllowIO, timer_pin[k]))
+    {
+      if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
+      {
+        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
+        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on, time left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+      }
+      else
+      {
+        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
+      }
+      pinMode(wemosGPIO[timer_pin[k]], OUTPUT);
+    }
+    k++;
   }
 }
 
@@ -738,6 +759,7 @@ void Iotbundle::readio()
     DEBUGLN("newio:" + String(currentio, BIN));
     newio_c = true;
     io = currentio;
+    previo = io;
   }
 }
 
@@ -832,11 +854,11 @@ void Iotbundle::Stringparse(String payload)
     {
       need_ota = true;
     }
-    else if (res_code.toInt() == 32764) // check ota update
+    else if (res_code.toInt() == 32764) // Timer io update from server
     {
       Timerparse(res_value);
     }
-    else if (res_code.toInt() == 32763)
+    else if (res_code.toInt() == 32763) // today timestamp
     {
       daytimestamp_s = false;
       daytimestamp = res_value.toInt();
@@ -863,67 +885,72 @@ void Iotbundle::Timerparse(String timer)
   timer_interval[2] = 0;
   timer_interval[3] = 0;
   timer_interval[4] = 0;
-
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  for (int i = 0; i < timer.length() + 1; i++)
+  if (timer)
   {
-    if (timer[i] == ',')
+    for (int i = 0; i < timer.length() + 1; i++)
     {
-      i++;
-      if (j == 3)
+      if (timer[i] == ',')
       {
-        timer_active[timer_index] = buff_timer.toInt();
+        i++;
+        if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
+        j = 0;
+        timer_index++;
+        buff_timer = "";
       }
-      j = 0;
-      timer_index++;
-      buff_timer = "";
-    }
-    else if (timer[i] == ':')
-    {
-      if (j == 0)
+      else if (timer[i] == ':')
       {
-        timer_pin[timer_index] = wemosGPIO[buff_timer.toInt()];
+        if (j == 0)
+        {
+          timer_pin[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 1)
+        {
+          timer_start[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 2)
+        {
+          timer_interval[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
+
+        buff_timer = "";
+        j++;
+        i++;
       }
-      else if (j == 1)
+      else if (i == timer.length())
       {
-        timer_start[timer_index] = buff_timer.toInt();
-      }
-      else if (j == 2)
-      {
-        timer_interval[timer_index] = buff_timer.toInt();
-      }
-      else if (j == 3)
-      {
-        timer_active[timer_index] = buff_timer.toInt();
+        if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
       }
 
-      buff_timer = "";
-      j++;
-      i++;
+      buff_timer += timer[i];
+
+      // DEBUGLN(timer[i]);
+      // if (j == 0)
+      //   res_code += timer[i];
+      // else if (j == 1)
+      // res_value += timer[i];
     }
-    else if (i == timer.length())
+
+    uint8_t k = 0;
+
+    while (timer_interval[k])
     {
-      if (j == 3)
-      {
-        timer_active[timer_index] = buff_timer.toInt();
-      }
+      DEBUGLN("pin:" + (String)timer_pin[k] + ", start:" + (String)timer_start[k] + ", interval:" + (String)timer_interval[k] + ", active:" + (String)timer_active[k]);
+      k++;
     }
-
-    buff_timer += timer[i];
-
-    // DEBUGLN(timer[i]);
-    // if (j == 0)
-    //   res_code += timer[i];
-    // else if (j == 1)
-    // res_value += timer[i];
   }
-
-  uint8_t k = 0;
-
-  while (timer_interval[k])
+  else
   {
-    DEBUGLN("pin:" + (String)timer_pin[k] + ", start:" + (String)timer_start[k] + ", interval:" + (String)timer_interval[k] + ", active:" + (String)timer_active[k]);
-    k++;
+    DEBUGLN("No timer");
   }
 }
 
