@@ -10,7 +10,6 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
-#include <EEPROM.h>
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
@@ -39,7 +38,9 @@ private:
   String _json_update;                  // JSON update data
   String _login_url;
   String _update_url;
-  bool timer_c = false, timer_s = true; // timer from server updated , request timer from server
+  bool daytimestamp_s = true,timer_c = false, timer_s = true; //today timestamp, timer from server updated , request timer from server
+  uint32_t daytimestamp;           // today timestamp
+  
 
   // clear sum variables
   void login();

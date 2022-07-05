@@ -187,6 +187,10 @@ void Iotbundle::handle()
   if (currentMillis - _previousMillis >= sendtime * 1000)
   {
     _previousMillis = currentMillis;
+
+    // today timestamp update
+    daytimestamp += sendtime;
+    DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
       if (_user_id > 0)
@@ -265,6 +269,11 @@ void Iotbundle::updateProject()
   {
     _json_update += ",\"timer_c\":1";
     timer_c = false;
+  }
+
+  if (daytimestamp_s) // request today timestamp from server
+  {
+    _json_update += ",\"daytimestamp_s\":1";
   }
 
   _json_update += "}";
@@ -818,6 +827,12 @@ void Iotbundle::Stringparse(String payload)
     {
       Timerparse(res_value);
     }
+    else if (res_code.toInt() == 32763)
+    {
+      daytimestamp_s = false;
+      daytimestamp = res_value.toInt();
+    }
+
     res_code = "";
     res_value = "";
     res_index++;
