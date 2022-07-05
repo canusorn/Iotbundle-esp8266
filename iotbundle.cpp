@@ -190,6 +190,15 @@ void Iotbundle::handle()
 
     // today timestamp update
     daytimestamp += sendtime;
+    if (daytimestamp >= 86400)
+    {
+      daytimestamp = daytimestamp % 86400;
+    }
+    uint8_t k = 0;
+    while (timer_interval[k])
+    {
+        }
+
     DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
@@ -847,6 +856,14 @@ void Iotbundle::Timerparse(String timer)
   timer_s = false;
   int8_t j = 0, timer_index = 0;
   String buff_timer = "";
+
+  // clear old timer
+  timer_interval[0] = 0;
+  timer_interval[1] = 0;
+  timer_interval[2] = 0;
+  timer_interval[3] = 0;
+  timer_interval[4] = 0;
+
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   for (int i = 0; i < timer.length() + 1; i++)
   {
