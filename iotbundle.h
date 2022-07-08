@@ -41,9 +41,9 @@ private:
   bool daytimestamp_s = true, timer_c = false, timer_s = true; // today timestamp, timer from server updated , request timer from server
   uint32_t daytimestamp;                                       // today timestamp
 
-  uint8_t timer_pin[5];
-  uint32_t timer_start[5], timer_interval[5];
-  bool timer_active[5];
+  uint8_t timer_pin[10];
+  uint32_t timer_start[10], timer_interval[10];
+  bool timer_active[10];
 
   // clear sum variables
   void login();

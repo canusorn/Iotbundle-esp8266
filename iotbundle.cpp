@@ -10,7 +10,6 @@ Iotbundle::Iotbundle(String project)
 
   // read start io
   readio();
-  // previo = io;
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
@@ -195,6 +194,11 @@ void Iotbundle::handle()
       daytimestamp = daytimestamp % 86400;
     }
 
+    if (daytimmestamp % 3600 >= 2900 && daytimmestamp % 3600 < 2905)  //update time every hour
+    {
+      timer_s = true;
+    }
+
     DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
@@ -223,6 +227,7 @@ void Iotbundle::TimerHandle()
 {
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint8_t k = 0;
+  uint8_t prev_active_pin = 9;
   while (timer_interval[k])
   {
     if (bitRead(_AllowIO, timer_pin[k]))
@@ -231,8 +236,9 @@ void Iotbundle::TimerHandle()
       {
         digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
         DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on, time left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+        prev_active_pin = timer_pin[k];
       }
-      else
+      else if (prev_active_pin != timer_pin[k])
       {
         digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
       }
@@ -885,6 +891,13 @@ void Iotbundle::Timerparse(String timer)
   timer_interval[2] = 0;
   timer_interval[3] = 0;
   timer_interval[4] = 0;
+  timer_interval[5] = 0;
+  timer_interval[6] = 0;
+  timer_interval[7] = 0;
+  timer_interval[8] = 0;
+  timer_interval[9] = 0;
+  timer_interval[10] = 0;
+
   if (timer)
   {
     for (int i = 0; i < timer.length() + 1; i++)

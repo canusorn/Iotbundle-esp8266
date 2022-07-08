@@ -71,8 +71,8 @@ PZEM004Tv30 pzem(D3, D4);             // rx,tx pin
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!
-// #define DHTTYPE DHT11 // DHT 11
-#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
+#define DHTTYPE DHT11 // DHT 11
+//#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 DHT dht(DHTPIN, DHTTYPE);
 uint8_t dht_time;
@@ -90,6 +90,7 @@ uint8_t t_connecting;
 iotwebconf::NetworkState prev_state = iotwebconf::Boot;
 uint8_t displaytime;
 String noti;
+uint16_t timer_nointernet;
 
 void setup()
 {
@@ -187,7 +188,7 @@ void loop()
 
         /*  4.1 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             และให้เรียก setProject ก่อน กรณีมีหลายโปรเจค    */
-             iot.setProject("AC_METER");
+        iot.setProject("AC_METER");
         iot.update(voltage, current, power, energy, frequency, pf);
     }
 
@@ -208,9 +209,9 @@ void loop()
         iot.setProject("DHT");
         iot.update(humid, temp);
 
-            // check need ota update flag from server
-    if (iot.need_ota)
-      iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
+        // check need ota update flag from server
+        if (iot.need_ota)
+            iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
     }
 }
 
@@ -356,7 +357,7 @@ void displayValue()
 
     if (iot.noti != "" && displaytime == 0)
     {
-        displaytime = 5;
+        displaytime = 3;
         noti = iot.noti;
         iot.noti = "";
     }
@@ -388,14 +389,29 @@ void displayValue()
     else if (curr_state == iotwebconf::OnLine)
     {
         if (iot.serverConnected)
+        {
             oled.drawIcon(56, 0, 8, 8, wifi_on, sizeof(wifi_on), true);
+            timer_nointernet = 0;
+        }
         else
+        {
             oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
+            timer_nointernet++;
+        }
     }
     else if (curr_state == iotwebconf::OffLine)
         oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
     oled.display();
+
+    // reconnect wifi if can't connect server
+    if (timer_nointernet >= 300)
+    {
+        iotWebConf.goOffLine();
+        timer_nointernet = 0;
+        delay(500);
+        iotWebConf.goOnLine(false);
+    }
 
     //------Serial display------
     if (!isnan(voltage))
