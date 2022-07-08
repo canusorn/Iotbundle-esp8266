@@ -194,7 +194,7 @@ void Iotbundle::handle()
       daytimestamp = daytimestamp % 86400;
     }
 
-    if (daytimmestamp % 3600 >= 2900 && daytimmestamp % 3600 < 2905)  //update time every hour
+    if (daytimestamp % 3600 >= 2900 && daytimestamp % 3600 < 2905)  //update time every hour
     {
       timer_s = true;
     }
