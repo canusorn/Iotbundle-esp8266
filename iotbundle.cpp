@@ -10,7 +10,6 @@ Iotbundle::Iotbundle(String project)
 
   // read start io
   readio();
-  previo = io;
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
@@ -41,8 +40,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v7/connect.php";
-  this->_update_url = this->_server + "/api/v7/update.php";
+  this->_login_url = this->_server + "/api/v8/connect.php";
+  this->_update_url = this->_server + "/api/v8/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -187,6 +186,20 @@ void Iotbundle::handle()
   if (currentMillis - _previousMillis >= sendtime * 1000)
   {
     _previousMillis = currentMillis;
+
+    // today timestamp update
+    daytimestamp += sendtime;
+    if (daytimestamp >= 86400)
+    {
+      daytimestamp = daytimestamp % 86400;
+    }
+
+    if (daytimestamp % 1800 >= 1600 && daytimestamp % 1800 < 1605) // update time every hour
+    {
+      timer_s = true;
+    }
+
+    DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
       if (_user_id > 0)
@@ -205,6 +218,33 @@ void Iotbundle::handle()
         }
       }
     }
+
+    TimerHandle();
+  }
+}
+
+void Iotbundle::TimerHandle()
+{
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  uint8_t k = 0;
+  uint8_t prev_active_pin = 9;
+  while (timer_interval[k])
+  {
+    if (bitRead(_AllowIO, timer_pin[k]))
+    {
+      if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
+      {
+        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
+        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+        prev_active_pin = timer_pin[k];
+      }
+      else if (prev_active_pin != timer_pin[k])
+      {
+        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
+      }
+      pinMode(wemosGPIO[timer_pin[k]], OUTPUT);
+    }
+    k++;
   }
 }
 
@@ -256,6 +296,22 @@ void Iotbundle::updateProject()
   else if (newio_s)
     _json_update += ",\"io_s\":" + String(io);
 
+  if (timer_s) // request timer from server
+  {
+    _json_update += ",\"timer_s\":1";
+    // timer_s = false;
+  }
+  else if (timer_c) // timer from server updated
+  {
+    _json_update += ",\"timer_c\":1";
+    timer_c = false;
+  }
+
+  if (daytimestamp_s) // request today timestamp from server
+  {
+    _json_update += ",\"daytimestamp_s\":1";
+  }
+
   _json_update += "}";
 
   DEBUGLN("sending data to server");
@@ -267,10 +323,7 @@ void Iotbundle::updateProject()
     _noConnect = 0;
     if (payload != "")
     {
-      int16_t res_code = Stringparse(payload);
-      if (res_code >= 0)
-      {
-      }
+      Stringparse(payload);
     }
   }
   else
@@ -712,6 +765,7 @@ void Iotbundle::readio()
     DEBUGLN("newio:" + String(currentio, BIN));
     newio_c = true;
     io = currentio;
+    previo = io;
   }
 }
 
@@ -735,56 +789,182 @@ void Iotbundle::init_io()
   DEBUGLN();
 }
 
-int16_t Iotbundle::Stringparse(String payload)
+void Iotbundle::Stringparse(String payload)
 {
   int str_len = payload.length() + 1;
   char buff[str_len];
   payload.toCharArray(buff, str_len);
 
-  int j = 0;
-  String res_code, io_s_str;
+  // response string
+  String res_data[10];
+  int8_t res_index = -1;
 
+  // split String with '&'
   for (int i = 0; i < str_len; i++)
   {
-    if (j == 0)
-      res_code += buff[i];
-    else if (j == 1)
-      io_s_str += buff[i];
-
     if (buff[i] == '&')
-      j++;
+    {
+      res_index++;
+      i++;
+    }
+
+    res_data[res_index] += buff[i];
   }
 
-  if (res_code.toInt() == 0) // have error
+  // code response
+  res_index = 0;
+  int j = 0;
+  String res_code, res_value;
+
+  // split key=value with '='
+  while (res_data[res_index] != "")
   {
-    Serial.println("!error:" + io_s_str);
-    return -1;
+    // DEBUGLN("res_data[" + String(res_index) + "] = " + res_data[res_index]);
+    for (int i = 0; i < res_data[res_index].length() + 1; i++)
+    {
+      if (res_data[res_index][i] == '=')
+      {
+        j++;
+        i++;
+      }
+
+      // DEBUGLN(res_data[res_index][i]);
+      if (j == 0)
+        res_code += res_data[res_index][i];
+      else if (j == 1)
+        res_value += res_data[res_index][i];
+    }
+
+    DEBUGLN("res_code : " + res_code + " = " + res_value);
+
+    if (res_code.toInt() == 0) // have error
+    {
+      Serial.println("!error:" + res_value);
+    }
+    else if (res_code.toInt() == 1) // new io form server
+    {
+      io = res_value.toInt();
+      iohandle_s();
+      newio_s = true;
+    }
+    else if (res_code.toInt() == 32767) // io from server updated
+    {
+      newio_s = false;
+    }
+    else if (res_code.toInt() == 32766) // io from client updated
+    {
+      newio_s = false;
+      newio_c = false;
+    }
+    else if (res_code.toInt() == 32765) // check ota update
+    {
+      need_ota = true;
+    }
+    else if (res_code.toInt() == 32764) // Timer io update from server
+    {
+      Timerparse(res_value);
+    }
+    else if (res_code.toInt() == 32763) // today timestamp
+    {
+      daytimestamp_s = false;
+      daytimestamp = res_value.toInt();
+    }
+
+    res_code = "";
+    res_value = "";
+    res_index++;
+    j = 0;
   }
-  else if (res_code.toInt() == 1) // new io form server
+}
+
+void Iotbundle::Timerparse(String timer)
+{
+  //  format {pin}:{start}:{interval}:{active h-l},{pin}:{start}:{interval}:{active h-l}
+  timer_c = true;
+  timer_s = false;
+  int8_t j = 0, timer_index = 0;
+  String buff_timer = "";
+
+  // clear old timer
+  timer_interval[0] = 0;
+  timer_interval[1] = 0;
+  timer_interval[2] = 0;
+  timer_interval[3] = 0;
+  timer_interval[4] = 0;
+  timer_interval[5] = 0;
+  timer_interval[6] = 0;
+  timer_interval[7] = 0;
+  timer_interval[8] = 0;
+  timer_interval[9] = 0;
+  timer_interval[10] = 0;
+
+  if (timer)
   {
-    io = io_s_str.toInt();
-    iohandle_s();
-    newio_s = true;
-    return 0;
-  }
-  else if (res_code.toInt() == 32767) // io from server updated
-  {
-    newio_s = false;
-    return 0;
-  }
-  else if (res_code.toInt() == 32766) // io from client updated
-  {
-    newio_s = false;
-    newio_c = false;
-    return 0;
-  }
-  else if (res_code.toInt() == 32765) // check ota update
-  {
-    need_ota = true;
-    // otaUpdate();
+    for (int i = 0; i < timer.length() + 1; i++)
+    {
+      if (timer[i] == ',')
+      {
+        i++;
+        if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
+        j = 0;
+        timer_index++;
+        buff_timer = "";
+      }
+      else if (timer[i] == ':')
+      {
+        if (j == 0)
+        {
+          timer_pin[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 1)
+        {
+          timer_start[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 2)
+        {
+          timer_interval[timer_index] = buff_timer.toInt();
+        }
+        else if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
+
+        buff_timer = "";
+        j++;
+        i++;
+      }
+      else if (i == timer.length())
+      {
+        if (j == 3)
+        {
+          timer_active[timer_index] = buff_timer.toInt();
+        }
+      }
+
+      buff_timer += timer[i];
+
+      // DEBUGLN(timer[i]);
+      // if (j == 0)
+      //   res_code += timer[i];
+      // else if (j == 1)
+      // res_value += timer[i];
+    }
+
+    uint8_t k = 0;
+
+    while (timer_interval[k])
+    {
+      DEBUGLN("pin:" + (String)timer_pin[k] + ", start:" + (String)timer_start[k] + ", interval:" + (String)timer_interval[k] + ", active:" + (String)timer_active[k]);
+      k++;
+    }
   }
   else
-    return res_code.toInt();
+  {
+    DEBUGLN("No timer");
+  }
 }
 
 void Iotbundle::otaUpdate(String optional_version, String url)

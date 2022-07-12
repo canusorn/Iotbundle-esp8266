@@ -13,7 +13,7 @@
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.7"
+#define VERSION "0.0.8"
 
 class Iotbundle
 {
@@ -38,6 +38,12 @@ private:
   String _json_update;                  // JSON update data
   String _login_url;
   String _update_url;
+  bool daytimestamp_s = true, timer_c = false, timer_s = true; // today timestamp, timer from server updated , request timer from server
+  uint32_t daytimestamp;                                       // today timestamp
+
+  uint8_t timer_pin[10];
+  uint32_t timer_start[10], timer_interval[10];
+  bool timer_active[10];
 
   // clear sum variables
   void login();
@@ -79,7 +85,13 @@ private:
   void updateProject();
 
   // parse json from payload
-  int16_t Stringparse(String payload);
+  void Stringparse(String payload);
+
+  // parse timer from response
+  void Timerparse(String timer);
+
+  // timer handle
+  void TimerHandle();
 
   // get project id form name
   uint8_t getProjectID(String project);
@@ -136,7 +148,7 @@ public:
   void fouceUpdate(bool settolowall = false);
 
   // ota update
-  void otaUpdate(String optional_version = "",String url = "");
+  void otaUpdate(String optional_version = "", String url = "");
 };
 
 // for set debug mode
