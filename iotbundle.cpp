@@ -194,7 +194,7 @@ void Iotbundle::handle()
       daytimestamp = daytimestamp % 86400;
     }
 
-    if (daytimestamp % 3600 >= 2900 && daytimestamp % 3600 < 2905)  //update time every hour
+    if (daytimestamp % 1800 >= 1600 && daytimestamp % 1800 < 1605) // update time every hour
     {
       timer_s = true;
     }
@@ -235,7 +235,7 @@ void Iotbundle::TimerHandle()
       if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
       {
         digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
-        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on, time left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
         prev_active_pin = timer_pin[k];
       }
       else if (prev_active_pin != timer_pin[k])
