@@ -41,6 +41,12 @@ private:
   bool daytimestamp_s = true, timer_c = false, timer_s = true; // today timestamp, timer from server updated , request timer from server
   uint32_t daytimestamp;                                       // today timestamp
 
+  // pin
+  uint8_t pin_mode[9];
+  bool pin_s = true, pin_c, pin_change; // request pin from server,pin from server updated, new input pin change
+  bool output_pin[9];                   // output pin state
+
+  // timer
   uint8_t timer_pin[10];
   uint32_t timer_start[10], timer_interval[10];
   bool timer_active[10];
