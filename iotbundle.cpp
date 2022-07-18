@@ -194,7 +194,7 @@ void Iotbundle::handle()
       daytimestamp = daytimestamp % 86400;
     }
 
-    if (daytimestamp % 1800 >= 1600 && daytimestamp % 1800 < 1605) // update time every hour
+    if (daytimestamp % 600 >= 500 && daytimestamp % 600 < 505) // update time every 10 min
     {
       timer_s = true;
     }
