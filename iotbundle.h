@@ -13,7 +13,7 @@
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.8"
+#define VERSION "0.0.9"
 
 class Iotbundle
 {
@@ -80,6 +80,7 @@ private:
 
   // handle io from server
   void iohandle_s();
+  void pinhandle_s(String pindata);
 
   // read io and update to server
   void readio();

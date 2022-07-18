@@ -6,10 +6,10 @@ Iotbundle::Iotbundle(String project)
   setProjectID(project, 0);
 
   // set all allow pin to low
-  init_io();
+  // init_io();
 
   // read start io
-  readio();
+  // readio();
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
@@ -40,8 +40,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v8/connect.php";
-  this->_update_url = this->_server + "/api/v8/update.php";
+  this->_login_url = this->_server + "/api/v9/connect.php";
+  this->_update_url = this->_server + "/api/v9/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -772,7 +772,7 @@ void Iotbundle::readio()
 void Iotbundle::setAllowIO(uint16_t allowio)
 {
   this->_AllowIO = allowio;
-  init_io();
+  // init_io();
 }
 
 void Iotbundle::init_io()
@@ -843,9 +843,9 @@ void Iotbundle::Stringparse(String payload)
     }
     else if (res_code.toInt() == 1) // new io form server
     {
-      io = res_value.toInt();
-      iohandle_s();
-      newio_s = true;
+      // io = res_value.toInt();
+      pinhandle_s(res_value);
+      // newio_s = true;
     }
     else if (res_code.toInt() == 32767) // io from server updated
     {
@@ -874,6 +874,48 @@ void Iotbundle::Stringparse(String payload)
     res_value = "";
     res_index++;
     j = 0;
+  }
+}
+
+void Iotbundle::pinhandle_s(String pindata)
+{
+  pin_c = true;
+  pin_s = false;
+
+  int str_len = pindata.length() + 1;
+  char buff[str_len];
+  pindata.toCharArray(buff, str_len);
+
+  // response string
+  String res_data[9];
+  uint8_t res_index;
+
+  // split String with ','
+  for (int i = 0; i < str_len; i++)
+  {
+    if (buff[i] == ',')
+    {
+      res_index++;
+      i++;
+    }
+
+    res_data[res_index] += buff[i];
+  }
+
+  // split key=value with '='
+  res_index = 0;
+  while (res_data[res_index] != "")
+  {
+    DEBUGLN("Pindata " + String(res_index) + " : " + (String)res_data[res_index]);
+
+    // split string
+    uint8_t pin = (res_data[res_index].substring(0, res_data[res_index].indexOf(':'))).toInt();
+    char mode = res_data[res_index][res_data[res_index].indexOf(':') + 1];
+    uint16_t value = (res_data[res_index].substring(res_data[res_index].lastIndexOf(':')+1, res_data[res_index].length())).toInt();
+
+    DEBUGLN("Pin:" + String(pin) + "\tMode:" + String(mode) + "\tValue:" + String(value));
+
+    res_index++;
   }
 }
 
