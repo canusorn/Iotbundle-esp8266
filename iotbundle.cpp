@@ -789,6 +789,12 @@ void Iotbundle::init_io()
   DEBUGLN();
 }
 
+uint8_t Iotbundle::wemosGPIO(uint8_t pin)
+{
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};
+  return wemosGPIO[pin];
+}
+
 void Iotbundle::Stringparse(String payload)
 {
   int str_len = payload.length() + 1;
@@ -910,10 +916,44 @@ void Iotbundle::pinhandle_s(String pindata)
 
     // split string
     uint8_t pin = (res_data[res_index].substring(0, res_data[res_index].indexOf(':'))).toInt();
-    char mode = res_data[res_index][res_data[res_index].indexOf(':') + 1];
-    uint16_t value = (res_data[res_index].substring(res_data[res_index].lastIndexOf(':')+1, res_data[res_index].length())).toInt();
+
+    char mode_c = res_data[res_index][res_data[res_index].indexOf(':') + 1];
+    uint8_t mode;
+    if (mode_c == 'I')
+      mode = 1;
+    else if (mode_c == 'O')
+      mode = 2;
+    else if (mode_c == 'P')
+      mode = 3;
+
+    uint16_t value = (res_data[res_index].substring(res_data[res_index].lastIndexOf(':') + 1, res_data[res_index].length())).toInt();
 
     DEBUGLN("Pin:" + String(pin) + "\tMode:" + String(mode) + "\tValue:" + String(value));
+
+    if (pin_mode[pin] != mode && bitRead(_AllowIO, pin)) // if pinmode not same and must allow pin
+    {
+      pin_mode[pin] = mode;  // change pin mode
+    }
+    if (bitRead(_AllowIO, pin)) // cheange pin value
+    {
+      if (pin_mode[pin] == 1) // input
+      {
+        pinMode(wemosGPIO(pin), INPUT);
+        DEBUGLN("Pin:D" + String(pin) + " set as Input");
+      }
+      else if (pin_mode[pin] == 2) // output
+      {
+        pinMode(wemosGPIO(pin), OUTPUT);
+        digitalWrite(wemosGPIO(pin), value ? HIGH : LOW);
+        DEBUGLN("Pin:D" + String(pin) + " set as Output\tvalue:" + (value) ? "HIGH" : "LOW");
+      }
+      else if (pin_mode[pin] == 3) // PWM
+      {
+        pinMode(wemosGPIO(pin), OUTPUT);
+        analogWrite(wemosGPIO(pin), value);
+        DEBUGLN("Pin:D" + String(pin) + " set as PWM\tvalue:" + String(value));
+      }
+    }
 
     res_index++;
   }
