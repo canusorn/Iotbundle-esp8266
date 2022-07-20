@@ -743,29 +743,56 @@ void Iotbundle::iohandle_s()
 
 void Iotbundle::readio()
 {
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  // uint16_t useio = _AllowIO;
-  uint16_t currentio;
-  // pinMode(D5, INPUT);
-  DEBUG("reading io -> ");
-  for (int i = 0; i < 9; i++)
-  {
+  // uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  // // uint16_t useio = _AllowIO;
+  // uint16_t currentio;
+  // // pinMode(D5, INPUT);
+  // DEBUG("reading io -> ");
+  // for (int i = 0; i < 9; i++)
+  // {
 
-    if (bitRead(_AllowIO, i))
-    { // use only allow pin
-      bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
-      DEBUG("io:" + String(i) + "=" + (String)digitalRead(wemosGPIO[i]) + ", ");
+  //   if (bitRead(_AllowIO, i))
+  //   { // use only allow pin
+  //     bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
+  //     DEBUG("io:" + String(i) + "=" + (String)digitalRead(wemosGPIO[i]) + ", ");
+  //   }
+  // }
+  // DEBUGLN();
+  // DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
+
+  // if (io != currentio)
+  // {
+  //   DEBUGLN("newio:" + String(currentio, BIN));
+  //   newio_c = true;
+  //   io = currentio;
+  //   previo = io;
+  // }
+  for (int i = 0; i <= 8; i++)
+  {
+    if (pin_mode[i] == 1 && bitRead(_AllowIO, i)) // input pin and must allow pin
+    {
+      if (digitalRead(wemosGPIO(i)) != value_pin[i])
+      {
+        value_pin[i] = digitalRead(wemosGPIO(i));
+        pin_change = true;
+      }
     }
-  }
-  DEBUGLN();
-  DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
-
-  if (io != currentio)
-  {
-    DEBUGLN("newio:" + String(currentio, BIN));
-    newio_c = true;
-    io = currentio;
-    previo = io;
+    else if (pin_mode[i] == 2 && bitRead(_AllowIO, i)) // out pin and must allow pin
+    {
+      if (digitalRead(wemosGPIO(i)) != value_pin[i])
+      {
+        value_pin[i] = digitalRead(wemosGPIO(i));
+        pin_change = true;
+      }
+    }
+    // else if (pin_mode[i] == 3 && bitRead(_AllowIO, i)) // pwm pin and must allow pin
+    // {
+    //   if (digitalRead(wemosGPIO(i)) != value_pin[i])
+    //   {
+    //     value_pin[i] = digitalRead(wemosGPIO(i));
+    //     pin_change = true;
+    //   }
+    // }
   }
 }
 
@@ -932,7 +959,7 @@ void Iotbundle::pinhandle_s(String pindata)
 
     if (pin_mode[pin] != mode && bitRead(_AllowIO, pin)) // if pinmode not same and must allow pin
     {
-      pin_mode[pin] = mode;  // change pin mode
+      pin_mode[pin] = mode; // change pin mode
     }
     if (bitRead(_AllowIO, pin)) // cheange pin value
     {
@@ -945,12 +972,16 @@ void Iotbundle::pinhandle_s(String pindata)
       {
         pinMode(wemosGPIO(pin), OUTPUT);
         digitalWrite(wemosGPIO(pin), value ? HIGH : LOW);
+        value_pin[pin]=value;
+        // prev_value_pin[pin]=value;
         DEBUGLN("Pin:D" + String(pin) + " set as Output\tvalue:" + (value) ? "HIGH" : "LOW");
       }
       else if (pin_mode[pin] == 3) // PWM
       {
         pinMode(wemosGPIO(pin), OUTPUT);
         analogWrite(wemosGPIO(pin), value);
+        value_pin[pin]=value;
+        // prev_value_pin[pin]=value;
         DEBUGLN("Pin:D" + String(pin) + " set as PWM\tvalue:" + String(value));
       }
     }
