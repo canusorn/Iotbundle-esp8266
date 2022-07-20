@@ -255,7 +255,6 @@ void Iotbundle::updateProject()
   {
     _json_update = "{\"esp_id\":" + _esp_id + ",";
     _json_update += "\"user_id\":" + String(_user_id) + ",";
-    // _json_update += "\"count\":" + String(projectCount()) + ",";
     _json_update += "\"data\":[";
   }
 
@@ -288,13 +287,21 @@ void Iotbundle::updateProject()
 
   _json_update += ']';
 
-  if (!newio_s)
-    readio();
+  // if (!newio_s)
+  //   readio();
 
-  if (newio_c)
-    _json_update += ",\"io_c\":" + String(io);
-  else if (newio_s)
-    _json_update += ",\"io_s\":" + String(io);
+  // if (newio_c)
+  //   _json_update += ",\"io_c\":" + String(io);
+  // else if (newio_s)
+  //   _json_update += ",\"io_s\":" + String(io);
+
+  if (pin_s) // request pin from server
+    _json_update += ",\"pin_s\":1";
+  else if (pin_c) // pin from server updated
+  {
+    _json_update += ",\"pin_c\":1";
+    pin_c = false;
+  }
 
   if (timer_s) // request timer from server
   {
@@ -972,7 +979,7 @@ void Iotbundle::pinhandle_s(String pindata)
       {
         pinMode(wemosGPIO(pin), OUTPUT);
         digitalWrite(wemosGPIO(pin), value ? HIGH : LOW);
-        value_pin[pin]=value;
+        value_pin[pin] = value;
         // prev_value_pin[pin]=value;
         DEBUGLN("Pin:D" + String(pin) + " set as Output\tvalue:" + (value) ? "HIGH" : "LOW");
       }
@@ -980,7 +987,7 @@ void Iotbundle::pinhandle_s(String pindata)
       {
         pinMode(wemosGPIO(pin), OUTPUT);
         analogWrite(wemosGPIO(pin), value);
-        value_pin[pin]=value;
+        value_pin[pin] = value;
         // prev_value_pin[pin]=value;
         DEBUGLN("Pin:D" + String(pin) + " set as PWM\tvalue:" + String(value));
       }

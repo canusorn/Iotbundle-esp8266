@@ -307,6 +307,7 @@ void display_update()
     {
       oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
       timer_nointernet++;
+      Serial.println("No connection time : " + String(timer_nointernet));
     }
   }
   else if (curr_state == iotwebconf::OffLine)
@@ -315,8 +316,9 @@ void display_update()
   oled.display();
 
   // reconnect wifi if can't connect server
-  if (timer_nointernet >= 300)
+  if (timer_nointernet >= 60)
   {
+    Serial.println("Can't connect to server -> Restart wifi");
     iotWebConf.goOffLine();
     timer_nointernet = 0;
     delay(500);
