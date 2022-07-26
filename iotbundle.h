@@ -51,6 +51,7 @@ private:
   uint8_t timer_pin[10];
   uint32_t timer_start[10], timer_interval[10];
   bool timer_active[10];
+  bool timer_state[10];
 
   // clear sum variables
   void login();

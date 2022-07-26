@@ -230,17 +230,29 @@ void Iotbundle::TimerHandle()
   uint8_t prev_active_pin = 9;
   while (timer_interval[k])
   {
+    DEBUGLN("[timer loop] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
     if (bitRead(_AllowIO, timer_pin[k]))
     {
       if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
       {
-        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
-        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
-        prev_active_pin = timer_pin[k];
+        if (!timer_state[k])
+        {
+          digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
+          DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+          value_pin[timer_pin[k]] = timer_active[k];
+          prev_active_pin = timer_pin[k];
+          timer_state[k] = true;
+        }
       }
       else if (prev_active_pin != timer_pin[k])
       {
-        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
+        if (timer_state[k])
+        {
+          digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
+          DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " off");
+          value_pin[timer_pin[k]] = !timer_active[k];
+          timer_state[k] = false;
+        }
       }
       pinMode(wemosGPIO[timer_pin[k]], OUTPUT);
     }
