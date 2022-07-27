@@ -769,29 +769,6 @@ void Iotbundle::iohandle_s()
 
 void Iotbundle::readio()
 {
-  // uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  // // uint16_t useio = _AllowIO;
-  // uint16_t currentio;
-  // // pinMode(D5, INPUT);
-  // DEBUG("reading io -> ");
-  // for (int i = 0; i < 9; i++)
-  // {
-  //   if (bitRead(_AllowIO, i))
-  //   { // use only allow pin
-  //     bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
-  //     DEBUG("io:" + String(i) + "=" + (String)digitalRead(wemosGPIO[i]) + ", ");
-  //   }
-  // }
-  // DEBUGLN();
-  // DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
-
-  // if (io != currentio)
-  // {
-  //   DEBUGLN("newio:" + String(currentio, BIN));
-  //   newio_c = true;
-  //   io = currentio;
-  //   previo = io;
-  // }
   for (int i = 0; i <= 8; i++)
   {
     // DEBUGLN("[pinread before] pin D" + String(i) + "\tmode:" + String(pin_mode[i]) + "\tvalue:" + String(value_pin[i]));
@@ -831,7 +808,7 @@ void Iotbundle::readio()
     }
     // DEBUGLN("[pinread after] pin D" + String(i) + "\tmode:" + String(pin_mode[i]) + "\tvalue:" + String(value_pin[i]));
   }
-  // DEBUGLN("[pinread after] binary : " + String(pin_change_checksum, BIN));
+  DEBUGLN("[pinread after] binary : " + String(pin_change_checksum, BIN));
 }
 
 void Iotbundle::setAllowIO(uint16_t allowio)
@@ -958,6 +935,7 @@ void Iotbundle::Stringparse(String payload)
 void Iotbundle::pinhandle_s(String pindata)
 {
   pin_c = true;
+  pin_change = true;
   pin_s = false;
 
   int str_len = pindata.length() + 1;
