@@ -7,6 +7,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
+#include <Ticker.h>
 #include <DHT.h>
 #include <iotbundle.h>
 
@@ -19,6 +20,9 @@ const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
 #define NUMBER_LEN 32
+
+// timer interrupt
+Ticker timestamp;
 
 // -- Method declarations.
 void handleRoot();
@@ -58,6 +62,40 @@ IotWebConfTextParameter emailParam = IotWebConfTextParameter("อีเมลล
 IotWebConfPasswordParameter passParam = IotWebConfPasswordParameter("รหัสผ่าน", "passParam", passParamValue, STRING_LEN);
 IotWebConfTextParameter serverParam = IotWebConfTextParameter("เซิฟเวอร์", "serverParam", serverParamValue, STRING_LEN, "https://iotkiddie.com");
 
+
+// timer interrupt every 1 second
+void time1sec()
+{
+  iot.interrupt1sec();
+
+  // if can't connect to network
+  if (iotWebConf.getState() == iotwebconf::OnLine)
+  {
+    if (iot.serverConnected)
+    {
+      timer_nointernet = 0;
+    }
+    else
+    {
+      timer_nointernet++;
+      if (timer_nointernet > 30)
+        Serial.println("No connection time : " + String(timer_nointernet));
+    }
+  }
+
+  // reconnect wifi if can't connect server
+  if (timer_nointernet == 60)
+  {
+    Serial.println("Can't connect to server -> Restart wifi");
+    iotWebConf.goOffLine();
+  }
+  else if (timer_nointernet >= 65)
+  {
+    timer_nointernet = 0;
+    iotWebConf.goOnLine(false);
+  }
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -65,6 +103,9 @@ void setup()
     // set low on boot
     digitalWrite(D1, LOW);
     pinMode(D1, OUTPUT);
+
+  // timer interrupt every 1 sec
+  timestamp.attach(1, time1sec);
 
     // go to deep sleep if low battery
     uint16_t vbatt = analogRead(A0) * 6200 / 1024; // Rall=300k+220k+100k  ->   max=6200mV at adc=1024(10bit)
@@ -215,27 +256,6 @@ void loop()
                 ESP.deepSleep(10 * 60e6); // sleep for 10 minutes
             }
             
-            iotwebconf::NetworkState curr_state = iotWebConf.getState();
-            if (curr_state == iotwebconf::OnLine)
-            {
-                if (iot.serverConnected)
-                {
-                    timer_nointernet = 0;
-                }
-                else
-                {
-                    timer_nointernet++;
-                }
-
-                // reconnect wifi if can't connect server
-                if (timer_nointernet >= 300)
-                {
-                    iotWebConf.goOffLine();
-                    timer_nointernet = 0;
-                    delay(500);
-                    iotWebConf.goOnLine(false);
-                }
-            }
         }
         /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
             ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
