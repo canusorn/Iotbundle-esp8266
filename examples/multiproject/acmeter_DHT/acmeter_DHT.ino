@@ -121,12 +121,16 @@ void time1sec()
   {
     Serial.println("Can't connect to server -> Restart wifi");
     iotWebConf.goOffLine();
+    timer_nointernet++;
   }
   else if (timer_nointernet >= 65)
   {
     timer_nointernet = 0;
     iotWebConf.goOnLine(false);
   }
+  else if (timer_nointernet >= 61)
+    timer_nointernet++;
+    
 }
 
 
