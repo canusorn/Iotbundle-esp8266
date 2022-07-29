@@ -187,18 +187,6 @@ void Iotbundle::handle()
   {
     _previousMillis = currentMillis;
 
-    // today timestamp update
-    daytimestamp += sendtime;
-    if (daytimestamp >= 86400)
-    {
-      daytimestamp = daytimestamp % 86400;
-    }
-
-    if (daytimestamp % 600 >= 500 && daytimestamp % 600 < 505) // update time every 10 min
-    {
-      timer_s = true;
-    }
-
     DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
@@ -1200,6 +1188,22 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   case HTTP_UPDATE_OK:
     Serial.println("[update] Update ok."); // may not be called since we reboot the ESP
     break;
+  }
+}
+
+void Iotbundle::interrupt1sec()
+{
+  // today timestamp update
+  daytimestamp++;
+
+  if (daytimestamp >= 86400)
+  {
+    daytimestamp = daytimestamp % 86400;
+  }
+
+  if (daytimestamp % 600 == 450) // update time every 10 min
+  {
+    timer_s = true;
   }
 }
 

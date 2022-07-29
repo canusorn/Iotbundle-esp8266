@@ -42,11 +42,11 @@ private:
   uint32_t daytimestamp;                                       // today timestamp
 
   // pin
-  uint8_t pin_mode[9];                  // 0-noactive 1-input 2-output 3-pwm
-  bool pin_s = true, pin_c, pin_change; // request pin from server,pin from server updated, new input pin change
-  uint8_t value_pin[9],prev_value_pin[9];                   // output pin state
-  uint16_t pin_change_checksum = 0;      // checksum for pin state change in binary
-  uint8_t wemosGPIO(uint8_t pin);       // get gpio number from 'D'pin
+  uint8_t pin_mode[9];                     // 0-noactive 1-input 2-output 3-pwm
+  bool pin_s = true, pin_c, pin_change;    // request pin from server,pin from server updated, new input pin change
+  uint8_t value_pin[9], prev_value_pin[9]; // output pin state
+  uint16_t pin_change_checksum = 0;        // checksum for pin state change in binary
+  uint8_t wemosGPIO(uint8_t pin);          // get gpio number from 'D'pin
 
   // timer
   uint8_t timer_pin[10];
@@ -141,6 +141,9 @@ public:
 
   // send data to server
   void handle();
+
+  // interrupt to update timer every 1 sec
+  void interrupt1sec();
 
   // set active project to update var
   void setProject(String projectname);
