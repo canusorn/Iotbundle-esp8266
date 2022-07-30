@@ -218,7 +218,7 @@ void Iotbundle::TimerHandle()
   uint8_t prev_active_pin = 9;
   while (timer_interval[k])
   {
-    DEBUGLN("[timer loop] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+    // DEBUGLN("[timer loop] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
     if (bitRead(_AllowIO, timer_pin[k]))
     {
       if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
@@ -805,20 +805,6 @@ void Iotbundle::setAllowIO(uint16_t allowio)
   // init_io();
 }
 
-void Iotbundle::init_io()
-{
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  for (int i = 0; i < 9; i++)
-  {
-    if (bitRead(_AllowIO, i))
-    { // use only allow pin
-      // pinMode(wemosGPIO[i], OUTPUT);
-      digitalWrite(wemosGPIO[i], LOW);
-    }
-  }
-  DEBUGLN();
-}
-
 uint8_t Iotbundle::wemosGPIO(uint8_t pin)
 {
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};
@@ -923,8 +909,10 @@ void Iotbundle::Stringparse(String payload)
 void Iotbundle::pinhandle_s(String pindata)
 {
   pin_c = true;
-  pin_change = true;
   pin_s = false;
+
+  if (pindata != "0")
+    pin_change = true;
 
   int str_len = pindata.length() + 1;
   char buff[str_len];

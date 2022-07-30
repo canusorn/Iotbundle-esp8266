@@ -88,9 +88,6 @@ private:
   // read io and update to server
   void readio();
 
-  // set input and low for allow pin
-  void init_io();
-
   // data update function
   void updateProject();
 
