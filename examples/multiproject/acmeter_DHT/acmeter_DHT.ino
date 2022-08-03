@@ -27,6 +27,7 @@
 #include <IotWebConfUsing.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
+#include <Ticker.h>
 #include <EEPROM.h>
 #include <iotbundle.h>
 
@@ -42,6 +43,9 @@ const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
 #define NUMBER_LEN 32
+
+// timer interrupt
+Ticker timestamp;
 
 // -- Method declarations.
 void handleRoot();
@@ -92,11 +96,52 @@ uint8_t displaytime;
 String noti;
 uint16_t timer_nointernet;
 
+// timer interrupt every 1 second
+void time1sec()
+{
+  iot.interrupt1sec();
+
+  // if can't connect to network
+  if (iotWebConf.getState() == iotwebconf::OnLine)
+  {
+    if (iot.serverConnected)
+    {
+      timer_nointernet = 0;
+    }
+    else
+    {
+      timer_nointernet++;
+      if (timer_nointernet > 30)
+        Serial.println("No connection time : " + String(timer_nointernet));
+    }
+  }
+
+  // reconnect wifi if can't connect server
+  if (timer_nointernet == 60)
+  {
+    Serial.println("Can't connect to server -> Restart wifi");
+    iotWebConf.goOffLine();
+    timer_nointernet++;
+  }
+  else if (timer_nointernet >= 65)
+  {
+    timer_nointernet = 0;
+    iotWebConf.goOnLine(false);
+  }
+  else if (timer_nointernet >= 61)
+    timer_nointernet++;
+    
+}
+
+
 void setup()
 {
     Serial.begin(115200);
     dht.begin();
     Wire.begin();
+
+  // timer interrupt every 1 sec
+  timestamp.attach(1, time1sec);
 
     // 1.1 เพิ่มโปรเจค DHT
     iot.addProject("DHT");
@@ -391,27 +436,16 @@ void displayValue()
         if (iot.serverConnected)
         {
             oled.drawIcon(56, 0, 8, 8, wifi_on, sizeof(wifi_on), true);
-            timer_nointernet = 0;
         }
         else
         {
             oled.drawIcon(56, 0, 8, 8, wifi_nointernet, sizeof(wifi_nointernet), true);
-            timer_nointernet++;
         }
     }
     else if (curr_state == iotwebconf::OffLine)
         oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
     oled.display();
-
-    // reconnect wifi if can't connect server
-    if (timer_nointernet >= 300)
-    {
-        iotWebConf.goOffLine();
-        timer_nointernet = 0;
-        delay(500);
-        iotWebConf.goOnLine(false);
-    }
 
     //------Serial display------
     if (!isnan(voltage))

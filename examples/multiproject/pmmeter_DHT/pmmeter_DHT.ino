@@ -15,6 +15,7 @@
 #include <IotWebConfUsing.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
+#include <Ticker.h>
 #include <Wire.h>
 #include <SFE_MicroOLED.h>
 #include <PMS.h>
@@ -32,6 +33,9 @@ const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
 #define NUMBER_LEN 32
+
+// timer interrupt
+Ticker timestamp;
 
 // -- Method declarations.
 void handleRoot();
@@ -85,6 +89,45 @@ uint8_t t_connecting;
 iotwebconf::NetworkState prev_state = iotwebconf::Boot;
 uint8_t displaytime;
 String noti;
+bool ota_updated = false;
+uint16_t timer_nointernet;
+
+// timer interrupt every 1 second
+void time1sec()
+{
+  iot.interrupt1sec();
+
+  // if can't connect to network
+  if (iotWebConf.getState() == iotwebconf::OnLine)
+  {
+    if (iot.serverConnected)
+    {
+      timer_nointernet = 0;
+    }
+    else
+    {
+      timer_nointernet++;
+      if (timer_nointernet > 30)
+        Serial.println("No connection time : " + String(timer_nointernet));
+    }
+  }
+
+  // reconnect wifi if can't connect server
+  if (timer_nointernet == 60)
+  {
+    Serial.println("Can't connect to server -> Restart wifi");
+    iotWebConf.goOffLine();
+    timer_nointernet++;
+  }
+  else if (timer_nointernet >= 65)
+  {
+    timer_nointernet = 0;
+    iotWebConf.goOnLine(false);
+  }
+  else if (timer_nointernet >= 61)
+    timer_nointernet++;
+    
+}
 
 void setup()
 {
@@ -92,6 +135,9 @@ void setup()
     pmsSerial.begin(9600);
     dht.begin();
     Wire.begin();
+
+  // timer interrupt every 1 sec
+  timestamp.attach(1, time1sec);
 
     // 1.1 เพิ่มโปรเจค DHT
     iot.addProject("DHT");

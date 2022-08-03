@@ -13,7 +13,7 @@
 
 #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.8"
+#define VERSION "0.0.9"
 
 class Iotbundle
 {
@@ -41,9 +41,18 @@ private:
   bool daytimestamp_s = true, timer_c = false, timer_s = true; // today timestamp, timer from server updated , request timer from server
   uint32_t daytimestamp;                                       // today timestamp
 
+  // pin
+  uint8_t pin_mode[9];                     // 0-noactive 1-input 2-output 3-pwm
+  bool pin_s = true, pin_c, pin_change;    // request pin from server,pin from server updated, new input pin change
+  uint8_t value_pin[9], prev_value_pin[9]; // output pin state
+  uint16_t pin_change_checksum = 0;        // checksum for pin state change in binary
+  uint8_t wemosGPIO(uint8_t pin);          // get gpio number from 'D'pin
+
+  // timer
   uint8_t timer_pin[10];
   uint32_t timer_start[10], timer_interval[10];
   bool timer_active[10];
+  bool timer_state[10];
 
   // clear sum variables
   void login();
@@ -74,12 +83,10 @@ private:
 
   // handle io from server
   void iohandle_s();
+  void pinhandle_s(String pindata);
 
   // read io and update to server
   void readio();
-
-  // set input and low for allow pin
-  void init_io();
 
   // data update function
   void updateProject();
@@ -131,6 +138,9 @@ public:
 
   // send data to server
   void handle();
+
+  // interrupt to update timer every 1 sec
+  void interrupt1sec();
 
   // set active project to update var
   void setProject(String projectname);

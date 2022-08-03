@@ -6,10 +6,10 @@ Iotbundle::Iotbundle(String project)
   setProjectID(project, 0);
 
   // set all allow pin to low
-  init_io();
+  // init_io();
 
   // read start io
-  readio();
+  // readio();
 
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
@@ -40,8 +40,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v8/connect.php";
-  this->_update_url = this->_server + "/api/v8/update.php";
+  this->_login_url = this->_server + "/api/v9/connect.php";
+  this->_update_url = this->_server + "/api/v9/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -187,18 +187,6 @@ void Iotbundle::handle()
   {
     _previousMillis = currentMillis;
 
-    // today timestamp update
-    daytimestamp += sendtime;
-    if (daytimestamp >= 86400)
-    {
-      daytimestamp = daytimestamp % 86400;
-    }
-
-    if (daytimestamp % 600 >= 500 && daytimestamp % 600 < 505) // update time every 10 min
-    {
-      timer_s = true;
-    }
-
     DEBUGLN("TodayTimestamp: " + String(daytimestamp));
     if (this->_email && this->_server != "")
     {
@@ -225,24 +213,38 @@ void Iotbundle::handle()
 
 void Iotbundle::TimerHandle()
 {
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
+  // uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint8_t k = 0;
   uint8_t prev_active_pin = 9;
   while (timer_interval[k])
   {
+    // DEBUGLN("[timer loop] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
     if (bitRead(_AllowIO, timer_pin[k]))
     {
       if ((daytimestamp >= timer_start[k]) && (daytimestamp < (timer_start[k] + timer_interval[k])))
       {
-        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? HIGH : LOW));
-        DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
-        prev_active_pin = timer_pin[k];
+        if (!timer_state[k])
+        {
+          digitalWrite(wemosGPIO(timer_pin[k]), (timer_active[k] ? HIGH : LOW));
+          DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " on,\ttime left " + String(timer_start[k] + timer_interval[k] - daytimestamp) + " sec");
+          value_pin[timer_pin[k]] = timer_active[k];
+          prev_active_pin = timer_pin[k];
+          timer_state[k] = true;
+          pin_change = true;
+        }
       }
       else if (prev_active_pin != timer_pin[k])
       {
-        digitalWrite(wemosGPIO[timer_pin[k]], (timer_active[k] ? LOW : HIGH));
+        if (timer_state[k])
+        {
+          digitalWrite(wemosGPIO(timer_pin[k]), (timer_active[k] ? LOW : HIGH));
+          DEBUGLN("[Timer] pin:D" + String(timer_pin[k]) + " off");
+          value_pin[timer_pin[k]] = !timer_active[k];
+          timer_state[k] = false;
+          pin_change = true;
+        }
       }
-      pinMode(wemosGPIO[timer_pin[k]], OUTPUT);
+      pinMode(wemosGPIO(timer_pin[k]), OUTPUT);
     }
     k++;
   }
@@ -255,7 +257,6 @@ void Iotbundle::updateProject()
   {
     _json_update = "{\"esp_id\":" + _esp_id + ",";
     _json_update += "\"user_id\":" + String(_user_id) + ",";
-    // _json_update += "\"count\":" + String(projectCount()) + ",";
     _json_update += "\"data\":[";
   }
 
@@ -288,13 +289,26 @@ void Iotbundle::updateProject()
 
   _json_update += ']';
 
-  if (!newio_s)
-    readio();
+  // if (!newio_s)
+  readio();
 
-  if (newio_c)
-    _json_update += ",\"io_c\":" + String(io);
-  else if (newio_s)
-    _json_update += ",\"io_s\":" + String(io);
+  // if (newio_c)
+  //   _json_update += ",\"io_c\":" + String(io);
+  // else if (newio_s)
+  //   _json_update += ",\"io_s\":" + String(io);
+
+  if (pin_s) // request pin from server
+    _json_update += ",\"pin_s\":1";
+  else if (pin_c) // pin from server updated
+  {
+    _json_update += ",\"pin_c\":1";
+    pin_c = false;
+  }
+
+  if (pin_change)
+  {
+    _json_update += ",\"pin_change\":" + String(pin_change_checksum);
+  }
 
   if (timer_s) // request timer from server
   {
@@ -743,50 +757,58 @@ void Iotbundle::iohandle_s()
 
 void Iotbundle::readio()
 {
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  // uint16_t useio = _AllowIO;
-  uint16_t currentio;
-  // pinMode(D5, INPUT);
-  DEBUG("reading io -> ");
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i <= 8; i++)
   {
+    // DEBUGLN("[pinread before] pin D" + String(i) + "\tmode:" + String(pin_mode[i]) + "\tvalue:" + String(value_pin[i]));
 
-    if (bitRead(_AllowIO, i))
-    { // use only allow pin
-      bitWrite(currentio, i, digitalRead(wemosGPIO[i]));
-      DEBUG("io:" + String(i) + "=" + (String)digitalRead(wemosGPIO[i]) + ", ");
+    if (pin_mode[i] == 1 && bitRead(_AllowIO, i)) // input pin and must allow pin
+    {
+      if (digitalRead(wemosGPIO(i)) != value_pin[i])
+      {
+        value_pin[i] = digitalRead(wemosGPIO(i));
+        pin_change = true;
+        // DEBUGLN("input mode condition");
+      }
+      bitWrite(pin_change_checksum, i, value_pin[i]);
     }
+    else if (pin_mode[i] == 2 && bitRead(_AllowIO, i)) // out pin and must allow pin
+    {
+      if (digitalRead(wemosGPIO(i)) != value_pin[i])
+      {
+        value_pin[i] = digitalRead(wemosGPIO(i));
+        pin_change = true;
+        // DEBUGLN("output mode condition");
+      }
+      bitWrite(pin_change_checksum, i, value_pin[i]);
+    }
+    // else if (pin_mode[i] == 3 && bitRead(_AllowIO, i)) // pwm pin and must allow pin
+    // {
+    //   if (digitalRead(wemosGPIO(i)) != value_pin[i])
+    //   {
+    //     value_pin[i] = digitalRead(wemosGPIO(i));
+    //     pin_change = true;
+    //   }
+    // }
+    else
+    {
+      // DEBUGLN("else condition");
+      bitWrite(pin_change_checksum, i, 0);
+    }
+    // DEBUGLN("[pinread after] pin D" + String(i) + "\tmode:" + String(pin_mode[i]) + "\tvalue:" + String(value_pin[i]));
   }
-  DEBUGLN();
-  DEBUGLN("io:" + String(io, BIN) + " currentio:" + String(currentio, BIN));
-
-  if (io != currentio)
-  {
-    DEBUGLN("newio:" + String(currentio, BIN));
-    newio_c = true;
-    io = currentio;
-    previo = io;
-  }
+  DEBUGLN("[pinread after] binary : " + String(pin_change_checksum, BIN));
 }
 
 void Iotbundle::setAllowIO(uint16_t allowio)
 {
   this->_AllowIO = allowio;
-  init_io();
+  // init_io();
 }
 
-void Iotbundle::init_io()
+uint8_t Iotbundle::wemosGPIO(uint8_t pin)
 {
-  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
-  for (int i = 0; i < 9; i++)
-  {
-    if (bitRead(_AllowIO, i))
-    { // use only allow pin
-      // pinMode(wemosGPIO[i], OUTPUT);
-      digitalWrite(wemosGPIO[i], LOW);
-    }
-  }
-  DEBUGLN();
+  uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};
+  return wemosGPIO[pin];
 }
 
 void Iotbundle::Stringparse(String payload)
@@ -843,9 +865,16 @@ void Iotbundle::Stringparse(String payload)
     }
     else if (res_code.toInt() == 1) // new io form server
     {
-      io = res_value.toInt();
-      iohandle_s();
-      newio_s = true;
+      // io = res_value.toInt();
+      pinhandle_s(res_value);
+      // newio_s = true;
+    }
+    else if (res_code.toInt() == 2) // io from client updated
+    {
+      if (res_value.toInt() == pin_change_checksum)
+      {
+        pin_change = false;
+      }
     }
     else if (res_code.toInt() == 32767) // io from server updated
     {
@@ -874,6 +903,89 @@ void Iotbundle::Stringparse(String payload)
     res_value = "";
     res_index++;
     j = 0;
+  }
+}
+
+void Iotbundle::pinhandle_s(String pindata)
+{
+  pin_c = true;
+  pin_s = false;
+
+  if (pindata != "0")
+    pin_change = true;
+
+  int str_len = pindata.length() + 1;
+  char buff[str_len];
+  pindata.toCharArray(buff, str_len);
+
+  // response string
+  String res_data[9];
+  uint8_t res_index;
+
+  // split String with ','
+  for (int i = 0; i < str_len; i++)
+  {
+    if (buff[i] == ',')
+    {
+      res_index++;
+      i++;
+    }
+
+    res_data[res_index] += buff[i];
+  }
+
+  // split key=value with '='
+  res_index = 0;
+  while (res_data[res_index] != "")
+  {
+    DEBUGLN("[Pindata] " + String(res_index) + " : " + (String)res_data[res_index]);
+
+    // split string
+    uint8_t pin = (res_data[res_index].substring(0, res_data[res_index].indexOf(':'))).toInt();
+
+    char mode_c = res_data[res_index][res_data[res_index].indexOf(':') + 1];
+    uint8_t mode = 0;
+    if (mode_c == 'I')
+      mode = 1;
+    else if (mode_c == 'O')
+      mode = 2;
+    else if (mode_c == 'P')
+      mode = 3;
+
+    uint16_t value = (res_data[res_index].substring(res_data[res_index].lastIndexOf(':') + 1, res_data[res_index].length())).toInt();
+
+    DEBUGLN("Pin:" + String(pin) + "\tMode:" + String(mode) + "\tValue:" + String(value));
+
+    if (pin_mode[pin] != mode && bitRead(_AllowIO, pin)) // if pinmode not same and must allow pin
+    {
+      pin_mode[pin] = mode; // change pin mode
+    }
+    if (bitRead(_AllowIO, pin)) // cheange pin value
+    {
+      if (pin_mode[pin] == 1) // input
+      {
+        pinMode(wemosGPIO(pin), INPUT);
+        DEBUGLN("Pin:D" + String(pin) + " set as Input");
+      }
+      else if (pin_mode[pin] == 2) // output
+      {
+        pinMode(wemosGPIO(pin), OUTPUT);
+        digitalWrite(wemosGPIO(pin), value ? HIGH : LOW);
+        value_pin[pin] = value;
+        // prev_value_pin[pin]=value;
+        DEBUGLN("Pin:D" + String(pin) + " set as Output\tvalue:" + (value ? "HIGH" : "LOW"));
+      }
+      else if (pin_mode[pin] == 3) // PWM
+      {
+        pinMode(wemosGPIO(pin), OUTPUT);
+        analogWrite(wemosGPIO(pin), value);
+        value_pin[pin] = value;
+        // prev_value_pin[pin]=value;
+        DEBUGLN("Pin:D" + String(pin) + " set as PWM\tvalue:" + String(value));
+      }
+    }
+
+    res_index++;
   }
 }
 
@@ -1064,6 +1176,22 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   case HTTP_UPDATE_OK:
     Serial.println("[update] Update ok."); // may not be called since we reboot the ESP
     break;
+  }
+}
+
+void Iotbundle::interrupt1sec()
+{
+  // today timestamp update
+  daytimestamp++;
+
+  if (daytimestamp >= 86400)
+  {
+    daytimestamp = daytimestamp % 86400;
+  }
+
+  if (daytimestamp % 600 == 450) // update time every 10 min
+  {
+    timer_s = true;
   }
 }
 
