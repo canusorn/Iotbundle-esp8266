@@ -1381,7 +1381,7 @@ void Iotbundle::smartFarmSolar(uint8_t id)
 void Iotbundle::acMeter_3p(uint8_t id)
 {
   // get project id
-  uint8_t project_id = getProjectID("AC_METER");
+  uint8_t project_id = getProjectID("AC_METER_3P");
 
   // find project array index
   uint8_t array;
@@ -1391,30 +1391,34 @@ void Iotbundle::acMeter_3p(uint8_t id)
       array = i;
   }
 
-  // calculate
-  float v = var_sum[0][array] / var_index[array];
-  float i = var_sum[1][array] / var_index[array];
-  float p = var_sum[2][array] / var_index[array];
-  float e = var_sum[3][array] / var_index[array];
-  float f = var_sum[4][array] / var_index[array];
-  float pf = var_sum[5][array] / var_index[array];
-
   _json_update += "{\"project_id\":" + String(_project_id[id]);
 
-  if (var_index[array])
-  { // validate
-    if (v >= 60 && v <= 260 && !isnan(v))
-      _json_update += ",\"voltage\":" + String(v, 1);
-    if (i >= 0 && i <= 100 && !isnan(i))
-      _json_update += ",\"current\":" + String(i, 3);
-    if (p >= 0 && p <= 24000 && !isnan(p))
-      _json_update += ",\"power\":" + String(p, 1);
-    if (e >= 0 && e <= 10000 && !isnan(e))
-      _json_update += ",\"energy\":" + String(e, 3);
-    if (f >= 40 && f <= 70 && !isnan(f))
-      _json_update += ",\"frequency\":" + String(f, 1);
-    if (pf >= 0 && pf <= 1 && !isnan(pf))
-      _json_update += ",\"pf\":" + String(pf, 2);
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    // calculate
+    float v = var_sum_3p[0][i] / var_index_3p[i];
+    float a = var_sum_3p[1][i] / var_index_3p[i];
+    float p = var_sum_3p[2][i] / var_index_3p[i];
+    float e = var_sum_3p[3][i] / var_index_3p[i];
+    float f = var_sum_3p[4][i] / var_index_3p[i];
+    float pf = var_sum_3p[5][i] / var_index_3p[i];
+
+    if (var_index_3p[i])
+    { // validate
+      if (v >= 60 && v <= 260 && !isnan(v))
+        _json_update += ",\"v" + String(i+1) + "\":" + String(v, 1);
+      if (i >= 0 && i <= 100 && !isnan(i))
+        _json_update += ",\"i" + String(i+1) + "\":" + String(a, 3);
+      if (p >= 0 && p <= 24000 && !isnan(p))
+        _json_update += ",\"p" + String(i+1) + "\":" + String(p, 1);
+      if (e >= 0 && e <= 10000 && !isnan(e))
+        _json_update += ",\"e" + String(i+1) + "\":" + String(e, 3);
+      if (f >= 40 && f <= 70 && !isnan(f))
+        _json_update += ",\"f" + String(i+1) + "\":" + String(f, 1);
+      if (pf >= 0 && pf <= 1 && !isnan(pf))
+        _json_update += ",\"pf" + String(i+1) + "\":" + String(pf, 2);
+    }
   }
+
   _json_update += "}";
 }

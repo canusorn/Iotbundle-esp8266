@@ -62,11 +62,9 @@ IotWebConfPasswordParameter passParam = IotWebConfPasswordParameter("รหั�
 IotWebConfTextParameter serverParam = IotWebConfTextParameter("เซิฟเวอร์", "serverParam", serverParamValue, STRING_LEN, "https://iotkiddie.com");
 
 #define PHASE 3
-MicroOLED oled(PIN_RESET, DC_JUMPER);                                                                    // Example I2C declaration, uncomment if using I2C
-PZEM004Tv30 pzems[] = {PZEM004Tv30(D3, D4, 0x01), PZEM004Tv30(D3, D4, 0x02), PZEM004Tv30(D3, D4, 0x03)}; // array of pzem 3 phase
+MicroOLED oled(PIN_RESET, DC_JUMPER); // Example I2C declaration, uncomment if using I2C
 
 unsigned long previousMillis = 0;
-float voltage[3], current[3], power[3], energy[3], frequency[3], pf[3];
 uint8_t phase_display;
 
 uint8_t logo_bmp[] = {
@@ -213,10 +211,6 @@ void loop()
 
         displayValue(); // update OLED
 
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-        ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง*/
-        iot.update(voltage, current, power, energy, frequency, pf);
-
         // check need ota update flag from server
         if (iot.need_ota)
             iot.otaUpdate(); // addition version (DHT11, DHT22, DHT21)  ,  custom url
@@ -225,6 +219,10 @@ void loop()
 
 void displayValue()
 {
+
+    PZEM004Tv30 pzems[] = {PZEM004Tv30(D3, D4, 0x01), PZEM004Tv30(D3, D4, 0x02), PZEM004Tv30(D3, D4, 0x03)}; // array of pzem 3 phase
+    float voltage[3], current[3], power[3], energy[3], frequency[3], pf[3];
+
     for (int i = 0; i < PHASE; i++)
     {
         //------read data------
@@ -249,29 +247,29 @@ void displayValue()
         //------Serial display------
         if (!isnan(voltage[i]))
         {
-            Serial.print("PZEM ");
+            Serial.print(F("PZEM "));
             Serial.print(i);
-            Serial.print(" - Address:");
+            Serial.print(F(" - Address:"));
             Serial.println(pzems[i].getAddress(), HEX);
-            Serial.println("===================");
-            Serial.print("Voltage: ");
+            Serial.println(F("==================="));
+            Serial.print(F("Voltage: "));
             Serial.print(voltage[i]);
             Serial.println("V");
-            Serial.print("Current: ");
+            Serial.print(F("Current: "));
             Serial.print(current[i]);
-            Serial.println("A");
-            Serial.print("Power: ");
+            Serial.println(F("A"));
+            Serial.print(F("Power: "));
             Serial.print(power[i]);
-            Serial.println("W");
-            Serial.print("Energy: ");
+            Serial.println(F("W"));
+            Serial.print(F("Energy: "));
             Serial.print(energy[i], 3);
-            Serial.println("kWh");
-            Serial.print("Frequency: ");
+            Serial.println(F("kWh"));
+            Serial.print(F("Frequency: "));
             Serial.print(frequency[i], 1);
-            Serial.println("Hz");
-            Serial.print("PF: ");
+            Serial.println(F("Hz"));
+            Serial.print(F("PF: "));
             Serial.println(pf[i]);
-            Serial.println("-------------------");
+            Serial.println(F("-------------------"));
             Serial.println();
         }
         else
@@ -279,6 +277,10 @@ void displayValue()
             Serial.println("No sensor detect");
         }
     }
+
+    /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+    ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง*/
+    iot.update(voltage, current, power, energy, frequency, pf);
 
     //------Update OLED display------
     oled.clear(PAGE);
