@@ -29,7 +29,7 @@ Iotbundle iot(PROJECT);
 #define PIN_RESET -1
 #define DC_JUMPER 0
 
-const char thingName[] = "acmeter";
+const char thingName[] = "acmeter_3p";
 const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
