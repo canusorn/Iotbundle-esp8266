@@ -27,7 +27,9 @@ private:
   String _esp_id;
   uint16_t _user_id;
   float var_sum[10][5]; // store sum variables
-  uint8_t var_index[5]; // number of store file
+  uint8_t var_index[5]; // number of store
+  float var_sum_3p[6][3];// store sum variables in 3 phase
+  uint8_t var_index_3p[3]; // number of store in 3 phase
   uint32_t _previousMillis;
   uint8_t sendtime = 5;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
@@ -115,6 +117,9 @@ private:
   // handle data smartFarmSolar'project
   void smartFarmSolar(uint8_t id = 0);
 
+// handle data acmeter 3 phase'project
+  void acMeter_3p(uint8_t id = 0);
+
 public:
   Iotbundle(String project);
 
@@ -147,6 +152,7 @@ public:
 
   // sumdata to cal average
   void update(float var1 = NAN, float var2 = NAN, float var3 = NAN, float var4 = NAN, float var5 = NAN, float var6 = NAN, float var7 = NAN, float var8 = NAN, float var9 = NAN, float var10 = NAN);
+  void update(float v[3], float i[3], float p[3], float e[3], float f[3], float pf[3]);
 
   // get status
   bool status();

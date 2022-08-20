@@ -5,12 +5,6 @@ Iotbundle::Iotbundle(String project)
   // set project id
   setProjectID(project, 0);
 
-  // set all allow pin to low
-  // init_io();
-
-  // read start io
-  // readio();
-
   // get this esp id
   this->_esp_id = String(ESP.getChipId());
 }
@@ -29,6 +23,8 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
     _AllowIO &= 0b101111001;
   else if (this->_project_id[array_project] == 5)
     _AllowIO &= 0b101100110;
+  else if (this->_project_id[array_project] == 6)
+    _AllowIO &= 0b111100001;
 }
 
 void Iotbundle::begin(String email, String pass, String server)
@@ -178,6 +174,10 @@ uint8_t Iotbundle::getProjectID(String project)
   {
     return 5;
   }
+  else if (project == "AC_METER_3P")
+  {
+    return 6;
+  }
 }
 
 void Iotbundle::handle()
@@ -284,6 +284,10 @@ void Iotbundle::updateProject()
     else if (_project_id[i] == 5)
     {
       smartFarmSolar(i);
+    }
+    else if (_project_id[i] == 6)
+    {
+      acMeter_3p(i);
     }
   }
 
@@ -396,6 +400,8 @@ void Iotbundle::setProject(String projectname)
 
 void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
+  if (var_index[activeProject] >= 200) // if almost overflow
+    clearvar();
 
   if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan
   {
@@ -422,18 +428,59 @@ void Iotbundle::update(float var1, float var2, float var3, float var4, float var
   }
 }
 
+void Iotbundle::update(float v[3], float a[3], float p[3], float e[3], float f[3], float pf[3])
+{
+  for (uint8_t i = 0; i < 3; i++)
+  {
+
+    if (var_index_3p[i] >= 200) // if almost overflow
+      clearvar();
+
+    if (!isnan(v[i]) || !isnan(a[i]) || !isnan(p[i]) || !isnan(e[i]) || !isnan(f[i]) || !isnan(pf[i]))
+    {
+      var_index_3p[i]++;
+      var_sum_3p[0][i] += v[i];
+      var_sum_3p[1][i] += a[i];
+      var_sum_3p[2][i] += p[i];
+      var_sum_3p[3][i] += e[i];
+      var_sum_3p[4][i] += f[i];
+      var_sum_3p[5][i] += pf[i];
+
+      DEBUG("updated data " + String(var_index_3p[i]) + " -> ");
+      for (uint8_t j = 0; j < 6; j++)
+      {
+        DEBUG(String(var_sum_3p[j][i]) + ", ");
+      }
+      DEBUGLN();
+    }
+  }
+  DEBUGLN("FreeHeap : " + String(ESP.getFreeHeap()));
+}
+
 void Iotbundle::clearvar()
 {
-  for (int i = 0; i < 10; i++)
+  for (uint8_t i = 0; i < 10; i++)
   {
-    for (int i2 = 0; i2 < 5; i2++)
+    for (uint8_t i2 = 0; i2 < 5; i2++)
     {
       var_sum[i][i2] = 0;
     }
   }
-  for (int j = 0; j < 5; j++)
+  for (uint8_t j = 0; j < 5; j++)
   {
     var_index[j] = 0;
+  }
+
+  for (uint8_t i = 0; i < 6; i++)
+  {
+    for (uint8_t i2 = 0; i2 < 3; i2++)
+    {
+      var_sum_3p[i][i2] = 0;
+    }
+  }
+  for (uint8_t j = 0; j < 3; j++)
+  {
+    var_index_3p[j] = 0;
   }
 }
 
@@ -1327,6 +1374,51 @@ void Iotbundle::smartFarmSolar(uint8_t id)
   }
   _json_update += ",\"valve\":";
   _json_update += (digitalRead(D1)) ? "1" : "0";
+
+  _json_update += "}";
+}
+
+void Iotbundle::acMeter_3p(uint8_t id)
+{
+  // get project id
+  uint8_t project_id = getProjectID("AC_METER_3P");
+
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    // calculate
+    float v = var_sum_3p[0][i] / var_index_3p[i];
+    float a = var_sum_3p[1][i] / var_index_3p[i];
+    float p = var_sum_3p[2][i] / var_index_3p[i];
+    float e = var_sum_3p[3][i] / var_index_3p[i];
+    float f = var_sum_3p[4][i] / var_index_3p[i];
+    float pf = var_sum_3p[5][i] / var_index_3p[i];
+
+    if (var_index_3p[i])
+    { // validate
+      if (v >= 60 && v <= 260 && !isnan(v))
+        _json_update += ",\"v" + String(i+1) + "\":" + String(v, 1);
+      if (i >= 0 && i <= 100 && !isnan(i))
+        _json_update += ",\"i" + String(i+1) + "\":" + String(a, 3);
+      if (p >= 0 && p <= 24000 && !isnan(p))
+        _json_update += ",\"p" + String(i+1) + "\":" + String(p, 1);
+      if (e >= 0 && e <= 10000 && !isnan(e))
+        _json_update += ",\"e" + String(i+1) + "\":" + String(e, 3);
+      if (f >= 40 && f <= 70 && !isnan(f))
+        _json_update += ",\"f" + String(i+1) + "\":" + String(f, 1);
+      if (pf >= 0 && pf <= 1 && !isnan(pf))
+        _json_update += ",\"pf" + String(i+1) + "\":" + String(pf, 2);
+    }
+  }
 
   _json_update += "}";
 }
