@@ -26,9 +26,9 @@ private:
   String _pass;
   String _esp_id;
   uint16_t _user_id;
-  float var_sum[10][5]; // store sum variables
-  uint8_t var_index[5]; // number of store
-  float var_sum_3p[6][3];// store sum variables in 3 phase
+  float var_sum[10][5];    // store sum variables
+  uint8_t var_index[5];    // number of store
+  float var_sum_3p[6][3];  // store sum variables in 3 phase
   uint8_t var_index_3p[3]; // number of store in 3 phase
   uint32_t _previousMillis;
   uint8_t sendtime = 5;                 // delay time to send in second
@@ -111,13 +111,16 @@ private:
   // handle data pmmeter'project
   void pmMeter(uint8_t id = 0);
 
+  // handle data dcmeter'project
+  void dcMeter(uint8_t id = 0);
+
   // handle data DHT'project
   void DHT(uint8_t id = 0);
 
   // handle data smartFarmSolar'project
   void smartFarmSolar(uint8_t id = 0);
 
-// handle data acmeter 3 phase'project
+  // handle data acmeter 3 phase'project
   void acMeter_3p(uint8_t id = 0);
 
 public:

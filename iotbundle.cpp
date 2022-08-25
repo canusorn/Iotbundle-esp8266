@@ -18,7 +18,8 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
     _AllowIO &= 0b111100001;
   else if (this->_project_id[array_project] == 2)
     _AllowIO &= 0b111100001;
-  // else if (this->_project_id[array_project] == 3)
+  else if (this->_project_id[array_project] == 3)
+    _AllowIO &= 0b100011000;
   else if (this->_project_id[array_project] == 4)
     _AllowIO &= 0b101111001;
   else if (this->_project_id[array_project] == 5)
@@ -276,6 +277,10 @@ void Iotbundle::updateProject()
     else if (_project_id[i] == 2)
     {
       pmMeter(i);
+    }
+    else if (_project_id[i] == 3)
+    {
+      dcMeter(i);
     }
     else if (_project_id[i] == 4)
     {
@@ -1315,6 +1320,41 @@ void Iotbundle::pmMeter(uint8_t id)
   _json_update += "}";
 }
 
+void Iotbundle::dcMeter(uint8_t id)
+{
+  // get project id
+  uint8_t project_id = getProjectID("DC_METER");
+
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float v = var_sum[0][array] / var_index[array];
+  float i = var_sum[1][array] / var_index[array];
+  float p = var_sum[2][array] / var_index[array];
+  float e = var_sum[3][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
+  { // validate
+    if (v >= 0 && v <= 300 && !isnan(v))
+      _json_update += ",\"voltage\":" + String(v, 1);
+    if (i >= 0 && i <= 300 && !isnan(i))
+      _json_update += ",\"current\":" + String(i, 3);
+    if (p >= 0 && p <= 90000 && !isnan(p))
+      _json_update += ",\"power\":" + String(p, 1);
+    if (e >= 0 && e <= 10000 && !isnan(e))
+      _json_update += ",\"energy\":" + String(e, 3);
+  }
+  _json_update += "}";
+}
+
 void Iotbundle::DHT(uint8_t id)
 {
   // get project id
@@ -1406,17 +1446,17 @@ void Iotbundle::acMeter_3p(uint8_t id)
     if (var_index_3p[i])
     { // validate
       if (v >= 60 && v <= 260 && !isnan(v))
-        _json_update += ",\"v" + String(i+1) + "\":" + String(v, 1);
+        _json_update += ",\"v" + String(i + 1) + "\":" + String(v, 1);
       if (i >= 0 && i <= 100 && !isnan(i))
-        _json_update += ",\"i" + String(i+1) + "\":" + String(a, 3);
+        _json_update += ",\"i" + String(i + 1) + "\":" + String(a, 3);
       if (p >= 0 && p <= 24000 && !isnan(p))
-        _json_update += ",\"p" + String(i+1) + "\":" + String(p, 1);
+        _json_update += ",\"p" + String(i + 1) + "\":" + String(p, 1);
       if (e >= 0 && e <= 10000 && !isnan(e))
-        _json_update += ",\"e" + String(i+1) + "\":" + String(e, 3);
+        _json_update += ",\"e" + String(i + 1) + "\":" + String(e, 3);
       if (f >= 40 && f <= 70 && !isnan(f))
-        _json_update += ",\"f" + String(i+1) + "\":" + String(f, 1);
+        _json_update += ",\"f" + String(i + 1) + "\":" + String(f, 1);
       if (pf >= 0 && pf <= 1 && !isnan(pf))
-        _json_update += ",\"pf" + String(i+1) + "\":" + String(pf, 2);
+        _json_update += ",\"pf" + String(i + 1) + "\":" + String(pf, 2);
     }
   }
 
