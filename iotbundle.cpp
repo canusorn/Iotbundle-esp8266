@@ -1344,9 +1344,9 @@ void Iotbundle::dcMeter(uint8_t id)
   if (var_index[array])
   { // validate
     if (v >= 0 && v <= 300 && !isnan(v))
-      _json_update += ",\"voltage\":" + String(v, 1);
+      _json_update += ",\"voltage\":" + String(v, 2);
     if (i >= 0 && i <= 300 && !isnan(i))
-      _json_update += ",\"current\":" + String(i, 3);
+      _json_update += ",\"current\":" + String(i, 2);
     if (p >= 0 && p <= 90000 && !isnan(p))
       _json_update += ",\"power\":" + String(p, 1);
     if (e >= 0 && e <= 10000 && !isnan(e))
