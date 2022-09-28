@@ -1447,7 +1447,7 @@ void Iotbundle::acMeter_3p(uint8_t id)
     { // validate
       if (v >= 60 && v <= 260 && !isnan(v))
         _json_update += ",\"v" + String(i + 1) + "\":" + String(v, 1);
-      if (i >= 0 && i <= 100 && !isnan(i))
+      if (a >= 0 && a <= 100 && !isnan(a))
         _json_update += ",\"i" + String(i + 1) + "\":" + String(a, 3);
       if (p >= 0 && p <= 24000 && !isnan(p))
         _json_update += ",\"p" + String(i + 1) + "\":" + String(p, 1);
