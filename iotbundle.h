@@ -168,6 +168,9 @@ public:
 
   // ota update
   void otaUpdate(String optional_version = "", String url = "");
+
+  // get today timestamp
+  uint32_t getTodayTimestamp();
 };
 
 // for set debug mode

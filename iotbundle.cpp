@@ -1247,6 +1247,11 @@ void Iotbundle::interrupt1sec()
   }
 }
 
+uint32_t Iotbundle::getTodayTimestamp()
+{
+  return daytimestamp;
+}
+
 void Iotbundle::acMeter(uint8_t id)
 {
   // get project id
@@ -1378,7 +1383,7 @@ void Iotbundle::DHT(uint8_t id)
   { // validate
     if (humid >= 10 && humid <= 100 && !isnan(humid))
       _json_update += ",\"humid\":" + String(humid, 1);
-    if (temp >= 5 && temp <= 70 && !isnan(temp))
+    if (temp >= -10 && temp <= 70 && !isnan(temp))
       _json_update += ",\"temp\":" + String(temp, 1);
   }
 
