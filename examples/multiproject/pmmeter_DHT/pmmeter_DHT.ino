@@ -50,9 +50,10 @@ PMS::DATA data;
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!
-#define DHTTYPE DHT11 // DHT 11
-// #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
+// #define DHTTYPE DHT11 // DHT 11
+#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
+
 DHT dht(DHTPIN, DHTTYPE);
 uint8_t dht_time;
 
@@ -92,41 +93,42 @@ String noti;
 bool ota_updated = false;
 uint16_t timer_nointernet;
 
+float humid, temp;
+
 // timer interrupt every 1 second
 void time1sec()
 {
-  iot.interrupt1sec();
+    iot.interrupt1sec();
 
-  // if can't connect to network
-  if (iotWebConf.getState() == iotwebconf::OnLine)
-  {
-    if (iot.serverConnected)
+    // if can't connect to network
+    if (iotWebConf.getState() == iotwebconf::OnLine)
     {
-      timer_nointernet = 0;
+        if (iot.serverConnected)
+        {
+            timer_nointernet = 0;
+        }
+        else
+        {
+            timer_nointernet++;
+            if (timer_nointernet > 30)
+                Serial.println("No connection time : " + String(timer_nointernet));
+        }
     }
-    else
-    {
-      timer_nointernet++;
-      if (timer_nointernet > 30)
-        Serial.println("No connection time : " + String(timer_nointernet));
-    }
-  }
 
-  // reconnect wifi if can't connect server
-  if (timer_nointernet == 60)
-  {
-    Serial.println("Can't connect to server -> Restart wifi");
-    iotWebConf.goOffLine();
-    timer_nointernet++;
-  }
-  else if (timer_nointernet >= 65)
-  {
-    timer_nointernet = 0;
-    iotWebConf.goOnLine(false);
-  }
-  else if (timer_nointernet >= 61)
-    timer_nointernet++;
-    
+    // reconnect wifi if can't connect server
+    if (timer_nointernet == 60)
+    {
+        Serial.println("Can't connect to server -> Restart wifi");
+        iotWebConf.goOffLine();
+        timer_nointernet++;
+    }
+    else if (timer_nointernet >= 65)
+    {
+        timer_nointernet = 0;
+        iotWebConf.goOnLine(false);
+    }
+    else if (timer_nointernet >= 61)
+        timer_nointernet++;
 }
 
 void setup()
@@ -136,8 +138,8 @@ void setup()
     dht.begin();
     Wire.begin();
 
-  // timer interrupt every 1 sec
-  timestamp.attach(1, time1sec);
+    // timer interrupt every 1 sec
+    timestamp.attach(1, time1sec);
 
     // 1.1 เพิ่มโปรเจค DHT
     iot.addProject("DHT");
@@ -153,20 +155,20 @@ void setup()
     oled.display();
 
     // for clear eeprom jump D5 to GND
-    pinMode(D5, INPUT_PULLUP);
-    if (digitalRead(D5) == false)
-    {
-        delay(1000);
-        if (digitalRead(D5) == false)
-        {
-            oled.clear(PAGE);
-            oled.setCursor(0, 0);
-            oled.print("Clear All data\n rebooting");
-            oled.display();
-            delay(1000);
-            clearEEPROM();
-        }
-    }
+    //    pinMode(D5, INPUT_PULLUP);
+    //    if (digitalRead(D5) == false)
+    //    {
+    //        delay(1000);
+    //        if (digitalRead(D5) == false)
+    //        {
+    //            oled.clear(PAGE);
+    //            oled.setCursor(0, 0);
+    //            oled.print("Clear All data\n rebooting");
+    //            oled.display();
+    //            delay(1000);
+    //            clearEEPROM();
+    //        }
+    //    }
 
     login.addItem(&emailParam);
     login.addItem(&passParam);
@@ -233,14 +235,14 @@ void loop()
         previousMillis = currentMillis;
         dht_time++;
         display_update(); // update OLED
-        sensordetect ++;
+        sensordetect++;
     }
 
     if (dht_time >= 2)
     { // dht read every 2 second
         dht_time = 0;
-        float humid = dht.readHumidity();
-        float temp = dht.readTemperature();
+        humid = dht.readHumidity();
+        temp = dht.readTemperature();
 
         Serial.print(F("Humidity: "));
         Serial.print(humid);
@@ -253,9 +255,9 @@ void loop()
         iot.setProject("DHT");
         iot.update(humid, temp);
 
-            // check need ota update flag from server
-    if (iot.need_ota)
-      iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
+        // check need ota update flag from server
+        if (iot.need_ota)
+            iot.otaUpdate(String(DHTTYPE)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
     }
 }
 
@@ -338,29 +340,27 @@ void display_update()
         Serial.println(noti);
     }
     //------Update OLED------
-    else if (sensordetect <= 5)
-    {
-        oled.clear(PAGE);
-        oled.setFontType(0);
-        oled.setCursor(0, 0);
-        oled.println("PM(ug/m3)");
-        oled.setCursor(0, 15);
-        oled.print(" 1.0 : ");
-        oled.print(data.PM_AE_UG_1_0);
-        oled.setCursor(0, 26);
-        oled.print(" 2.5 : ");
-        oled.print(data.PM_AE_UG_2_5);
-        oled.setCursor(0, 37);
-        oled.print("10.0 : ");
-        oled.print(data.PM_AE_UG_10_0);
-    }
-    // if no data from sensor
     else
     {
         oled.clear(PAGE);
         oled.setFontType(0);
         oled.setCursor(0, 0);
-        oled.printf("-Sensor-\n\nno sensor\ndetect!");
+        oled.println("-Sensors-");
+        oled.setCursor(0, 15);
+        oled.print("PM2.5:");
+        oled.print(data.PM_AE_UG_2_5,0);
+        // oled.print("10");
+        oled.setCursor(0, 26);
+        oled.print("CO2  :");
+        oled.print("");
+        oled.setCursor(0, 37);
+        oled.print("T:");
+        oled.print(temp,0);
+        // oled.print(31);
+        oled.setCursor(33, 37);
+        oled.print("H:");
+        oled.print(humid,0);
+        // oled.print(69);
     }
 
     // display state
