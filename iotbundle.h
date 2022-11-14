@@ -11,7 +11,7 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
 
-// #define IOTBUNDLE_DEBUG
+#define IOTBUNDLE_DEBUG
 #define retryget_userid 30
 #define VERSION "0.0.9"
 
@@ -104,6 +104,9 @@ private:
 
   // get project id form name
   uint8_t getProjectID(String project);
+
+  // handle data custom'project
+  void custom(uint8_t id = 0);
 
   // handle data acmeter'project
   void acMeter(uint8_t id = 0);

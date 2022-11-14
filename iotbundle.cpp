@@ -14,7 +14,9 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
   // set project id
   this->_project_id[array_project] = getProjectID(project);
 
-  if (this->_project_id[array_project] == 1)
+  if (this->_project_id[array_project] == 0)
+    _AllowIO &= 0b111111111;
+  else if (this->_project_id[array_project] == 1)
     _AllowIO &= 0b111100001;
   else if (this->_project_id[array_project] == 2)
     _AllowIO &= 0b111100001;
@@ -155,7 +157,11 @@ void Iotbundle::projectSort()
 
 uint8_t Iotbundle::getProjectID(String project)
 {
-  if (project == "AC_METER")
+  if (project == "CUSTOM")
+  {
+    return 0;
+  }
+  else if (project == "AC_METER")
   {
     return 1;
   }
@@ -270,7 +276,11 @@ void Iotbundle::updateProject()
       _json_update += ',';
     }
 
-    if (_project_id[i] == 1)
+    if (_project_id[i] == 0)
+    {
+      custom(i);
+    }
+    else if (_project_id[i] == 1)
     {
       acMeter(i);
     }
@@ -1250,6 +1260,59 @@ void Iotbundle::interrupt1sec()
 uint32_t Iotbundle::getTodayTimestamp()
 {
   return daytimestamp;
+}
+
+void Iotbundle::custom(uint8_t id)
+{
+  // get project id
+  uint8_t project_id = getProjectID("CUSTOM");
+
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float c0 = var_sum[0][array] / var_index[array];
+  float c1 = var_sum[1][array] / var_index[array];
+  float c2 = var_sum[2][array] / var_index[array];
+  float c3 = var_sum[3][array] / var_index[array];
+  float c4 = var_sum[4][array] / var_index[array];
+  float c5 = var_sum[5][array] / var_index[array];
+  float c6 = var_sum[6][array] / var_index[array];
+  float c7 = var_sum[7][array] / var_index[array];
+  float c8 = var_sum[8][array] / var_index[array];
+  float c9 = var_sum[9][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
+  { // validate
+    if (!isnan(c0))
+      _json_update += ",\"c0\":" + String(c0, 1);
+    if (!isnan(c1))
+      _json_update += ",\"c1\":" + String(c1, 1);
+    if (!isnan(c2))
+      _json_update += ",\"c2\":" + String(c2, 1);
+    if (!isnan(c3))
+      _json_update += ",\"c3\":" + String(c3, 1);
+    if (!isnan(c4))
+      _json_update += ",\"c4\":" + String(c4, 1);
+    if (!isnan(c5))
+      _json_update += ",\"c5\":" + String(c5, 1);
+    if (!isnan(c6))
+      _json_update += ",\"c6\":" + String(c6, 1);
+    if (!isnan(c7))
+      _json_update += ",\"c7\":" + String(c7, 1);
+    if (!isnan(c8))
+      _json_update += ",\"c8\":" + String(c8, 1);
+    if (!isnan(c9))
+      _json_update += ",\"c9\":" + String(c9, 1);
+  }
+  _json_update += "}";
 }
 
 void Iotbundle::acMeter(uint8_t id)
