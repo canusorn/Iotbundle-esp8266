@@ -1277,11 +1277,11 @@ void Iotbundle::acMeter(uint8_t id)
 
   if (var_index[array])
   { // validate
-    if (v >= 60 && v <= 260 && !isnan(v))
+    if (v >= 50 && v <= 270 && !isnan(v))
       _json_update += ",\"voltage\":" + String(v, 1);
-    if (i >= 0 && i <= 100 && !isnan(i))
+    if (i >= 0 && i <= 120 && !isnan(i))
       _json_update += ",\"current\":" + String(i, 3);
-    if (p >= 0 && p <= 24000 && !isnan(p))
+    if (p >= 0 && p <= 25000 && !isnan(p))
       _json_update += ",\"power\":" + String(p, 1);
     if (e >= 0 && e <= 10000 && !isnan(e))
       _json_update += ",\"energy\":" + String(e, 3);
