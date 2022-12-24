@@ -347,20 +347,14 @@ void display_update()
         oled.setCursor(0, 0);
         oled.println("-Sensors-");
         oled.setCursor(0, 15);
-        oled.print("PM2.5:");
+        oled.print("PM2.5: ");
         oled.print(data.PM_AE_UG_2_5,0);
-        // oled.print("10");
-        oled.setCursor(0, 26);
-        oled.print("CO2  :");
-        oled.print("");
-        oled.setCursor(0, 37);
-        oled.print("T:");
-        oled.print(temp,0);
-        // oled.print(31);
-        oled.setCursor(33, 37);
-        oled.print("H:");
-        oled.print(humid,0);
-        // oled.print(69);
+        oled.setCursor(0, 27);
+        oled.print("T: ");
+        oled.print(temp,1);
+        oled.setCursor(0, 39);
+        oled.print("H: ");
+        oled.print(humid,1);
     }
 
     // display state
