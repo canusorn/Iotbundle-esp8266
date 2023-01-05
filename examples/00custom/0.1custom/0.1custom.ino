@@ -14,7 +14,6 @@ String email = "test@iotkiddie.com";
 String pass = "12345678";
 
 unsigned long previousMillis = 0;
-float voltage, current, power, energy, frequency, pf;
 
 void setup()
 {
