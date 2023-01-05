@@ -11,9 +11,10 @@
 #include <ESP8266httpUpdate.h>
 #include <WiFiClientSecureBearSSL.h>
 
-#define IOTBUNDLE_DEBUG
+// #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.9"
+#define VERSION "0.0.9"     // for iotwebconfig -> don't change
+#define IOTVERSION "0.0.9"
 
 class Iotbundle
 {
@@ -136,7 +137,7 @@ public:
   String noti;
 
   // version
-  String version = VERSION;
+  String version = IOTVERSION;
 
   // need ota update flag
   bool need_ota = false;
@@ -167,7 +168,7 @@ public:
   void setAllowIO(uint16_t allowio);
 
   // fouce update data before sleep
-  void fouceUpdate(bool settolowall = false);
+  void forceUpdate(bool settolowall = false);
 
   // ota update
   void otaUpdate(String optional_version = "", String url = "");

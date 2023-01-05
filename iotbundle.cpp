@@ -32,6 +32,8 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
 
 void Iotbundle::begin(String email, String pass, String server)
 {
+  Serial.println("Iotkiddie v." + version);
+  Serial.println("more infomation at https://iotkiddie.com");
 
   // set server
   this->_server = server;
@@ -382,7 +384,7 @@ int8_t Iotbundle::projectCount()
   return -1;
 }
 
-void Iotbundle::fouceUpdate(bool settolowall)
+void Iotbundle::forceUpdate(bool settolowall)
 {
   if (this->_email && this->_server != "")
   {
@@ -1143,7 +1145,7 @@ void Iotbundle::Timerparse(String timer)
 
 void Iotbundle::otaUpdate(String optional_version, String url)
 {
-  WiFiClient client;
+  // WiFiClient client;
 
   ESPhttpUpdate.onStart([]()
                         { Serial.println("CALLBACK:  HTTP update process started"); });
