@@ -41,8 +41,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v9/connect.php";
-  this->_update_url = this->_server + "/api/v9/update.php";
+  this->_login_url = this->_server + "/api/v10/connect.php";
+  this->_update_url = this->_server + "/api/v10/update.php";
 
   // delete spacebar from email
   String _temp_email = email;

@@ -13,8 +13,8 @@
 
 // #define IOTBUNDLE_DEBUG
 #define retryget_userid 30
-#define VERSION "0.0.9"     // for iotwebconfig -> don't change
-#define IOTVERSION "0.0.9"
+#define VERSION "0.0.9" // for iotwebconfig -> don't change
+#define IOTVERSION "0.1.0"
 
 class Iotbundle
 {
