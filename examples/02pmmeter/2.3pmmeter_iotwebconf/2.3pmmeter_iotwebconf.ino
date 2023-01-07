@@ -115,7 +115,6 @@ void time1sec()
   }
 }
 
-
 void setup()
 {
   Serial.begin(115200);
@@ -397,6 +396,8 @@ void handleRoot()
   s += ESP.getChipId();
   s += "<li>Server : ";
   s += serverParamValue;
+  s += "<li>Version : ";
+  s += IOTVERSION;
   s += "</ul>";
   s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
   s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";

@@ -112,9 +112,7 @@ void time1sec()
   }
   else if (timer_nointernet >= 61)
     timer_nointernet++;
-    
 }
-
 
 void setup()
 {
@@ -360,7 +358,6 @@ void display_update()
     oled.drawIcon(56, 0, 8, 8, wifi_off, sizeof(wifi_off), true);
 
   oled.display();
-
 }
 
 void handleRoot()
@@ -386,6 +383,8 @@ void handleRoot()
   s += ESP.getChipId();
   s += "<li>Server : ";
   s += serverParamValue;
+  s += "<li>Version : ";
+  s += IOTVERSION;
   s += "</ul>";
   s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
   s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";

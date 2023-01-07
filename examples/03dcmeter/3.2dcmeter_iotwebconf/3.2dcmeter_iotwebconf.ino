@@ -604,7 +604,7 @@ void handleRoot()
     s += "<li>Server : ";
     s += serverParamValue;
     s += "<li>Version : ";
-    s += VERSION;
+    s += IOTVERSION;
     s += "</ul>";
     s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
     s += "<a href='config'>configure page แก้ไขข้อมูล wifi และ user</a>";
