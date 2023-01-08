@@ -155,20 +155,20 @@ void setup()
     oled.display();
 
     // for clear eeprom jump D5 to GND
-    //    pinMode(D5, INPUT_PULLUP);
-    //    if (digitalRead(D5) == false)
-    //    {
-    //        delay(1000);
-    //        if (digitalRead(D5) == false)
-    //        {
-    //            oled.clear(PAGE);
-    //            oled.setCursor(0, 0);
-    //            oled.print("Clear All data\n rebooting");
-    //            oled.display();
-    //            delay(1000);
-    //            clearEEPROM();
-    //        }
-    //    }
+       pinMode(D5, INPUT_PULLUP);
+       if (digitalRead(D5) == false)
+       {
+           delay(1000);
+           if (digitalRead(D5) == false)
+           {
+               oled.clear(PAGE);
+               oled.setCursor(0, 0);
+               oled.print("Clear All data\n rebooting");
+               oled.display();
+               delay(1000);
+               clearEEPROM();
+           }
+       }
 
     login.addItem(&emailParam);
     login.addItem(&passParam);
