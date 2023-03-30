@@ -1348,7 +1348,7 @@ void Iotbundle::acMeter(uint8_t id)
       _json_update += ",\"current\":" + String(i, 3);
     if (p >= 0 && p <= 25000 && !isnan(p))
       _json_update += ",\"power\":" + String(p, 1);
-    if (e >= 0 && e <= 10000 && !isnan(e))
+    if (e >= 0 && e <= 99999 && !isnan(e))
       _json_update += ",\"energy\":" + String(e, 3);
     if (f >= 40 && f <= 70 && !isnan(f))
       _json_update += ",\"frequency\":" + String(f, 1);

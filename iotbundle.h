@@ -12,6 +12,7 @@
 #include <WiFiClientSecureBearSSL.h>
 
 // #define IOTBUNDLE_DEBUG
+#ifndef retryget_userid
 #define retryget_userid 30
 #define VERSION "0.0.9" // for iotwebconfig -> don't change
 #define IOTVERSION "0.1.0"
