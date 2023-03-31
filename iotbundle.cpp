@@ -187,6 +187,7 @@ uint8_t Iotbundle::getProjectID(String project)
   {
     return 6;
   }
+  return 0;
 }
 
 void Iotbundle::handle()
