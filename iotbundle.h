@@ -17,6 +17,10 @@
 #define retryget_userid 30
 #endif
 
+#ifndef SAMPLERATE
+#define SAMPLERATE 30
+#endif
+
 #define VERSION "0.0.9" // for iotwebconfig -> don't change
 #define IOTVERSION "0.1.0"
 
@@ -36,7 +40,7 @@ private:
   float var_sum_3p[6][3];  // store sum variables in 3 phase
   uint8_t var_index_3p[3]; // number of store in 3 phase
   uint32_t _previousMillis;
-  const uint8_t sendtime = 30;                 // delay time to send in second
+  const uint8_t sendtime = SAMPLERATE;                 // delay time to send in second
   uint8_t _get_userid;                  // soft timer to retry login
   bool newio_s = false, newio_c = true; // flag new io from server,clients has change
   uint16_t io, previo;                  // current io output, previous io
