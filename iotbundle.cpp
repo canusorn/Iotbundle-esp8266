@@ -41,8 +41,8 @@ void Iotbundle::begin(String email, String pass, String server)
     this->_server = "https://iotkiddie.com";
 
   // set login url
-  this->_login_url = this->_server + "/api/v9/connect.php";
-  this->_update_url = this->_server + "/api/v9/update.php";
+  this->_login_url = this->_server + "/api/v10/connect.php";
+  this->_update_url = this->_server + "/api/v10/update.php";
 
   // delete spacebar from email
   String _temp_email = email;
@@ -187,6 +187,7 @@ uint8_t Iotbundle::getProjectID(String project)
   {
     return 6;
   }
+  return 0;
 }
 
 void Iotbundle::handle()
@@ -1348,7 +1349,7 @@ void Iotbundle::acMeter(uint8_t id)
       _json_update += ",\"current\":" + String(i, 3);
     if (p >= 0 && p <= 25000 && !isnan(p))
       _json_update += ",\"power\":" + String(p, 1);
-    if (e >= 0 && e <= 10000 && !isnan(e))
+    if (e >= 0 && e <= 99999 && !isnan(e))
       _json_update += ",\"energy\":" + String(e, 3);
     if (f >= 40 && f <= 70 && !isnan(f))
       _json_update += ",\"frequency\":" + String(f, 1);

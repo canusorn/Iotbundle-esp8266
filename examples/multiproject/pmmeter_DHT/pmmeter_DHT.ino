@@ -52,7 +52,7 @@ PMS::DATA data;
 // Uncomment whatever type you're using!
 // #define DHTTYPE DHT11 // DHT 11
 #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
-//#define DHTTYPE DHT21   // DHT 21 (AM2301)
+// #define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 DHT dht(DHTPIN, DHTTYPE);
 uint8_t dht_time;
@@ -155,20 +155,20 @@ void setup()
     oled.display();
 
     // for clear eeprom jump D5 to GND
-    //    pinMode(D5, INPUT_PULLUP);
-    //    if (digitalRead(D5) == false)
-    //    {
-    //        delay(1000);
-    //        if (digitalRead(D5) == false)
-    //        {
-    //            oled.clear(PAGE);
-    //            oled.setCursor(0, 0);
-    //            oled.print("Clear All data\n rebooting");
-    //            oled.display();
-    //            delay(1000);
-    //            clearEEPROM();
-    //        }
-    //    }
+       pinMode(D5, INPUT_PULLUP);
+       if (digitalRead(D5) == false)
+       {
+           delay(1000);
+           if (digitalRead(D5) == false)
+           {
+               oled.clear(PAGE);
+               oled.setCursor(0, 0);
+               oled.print("Clear All data\n rebooting");
+               oled.display();
+               delay(1000);
+               clearEEPROM();
+           }
+       }
 
     login.addItem(&emailParam);
     login.addItem(&passParam);
@@ -348,13 +348,13 @@ void display_update()
         oled.println("-Sensors-");
         oled.setCursor(0, 15);
         oled.print("PM2.5: ");
-        oled.print(data.PM_AE_UG_2_5,0);
+        oled.print(data.PM_AE_UG_2_5, 0);
         oled.setCursor(0, 27);
         oled.print("T: ");
-        oled.print(temp,1);
+        oled.print(temp, 1);
         oled.setCursor(0, 39);
         oled.print("H: ");
-        oled.print(humid,1);
+        oled.print(humid, 1);
     }
 
     // display state
@@ -423,6 +423,8 @@ void handleRoot()
     s += ESP.getChipId();
     s += "<li>Server : ";
     s += serverParamValue;
+    s += "<li>Version : ";
+    s += IOTVERSION;
     s += "</ul>";
     s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
     s += "<a href='config'>configure page</a> เพื่อแก้ไขข้อมูล wifi และ user";
