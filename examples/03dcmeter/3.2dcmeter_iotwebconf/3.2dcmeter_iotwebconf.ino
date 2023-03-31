@@ -362,12 +362,12 @@ void display_update()
     }
 
     // on error
-    //   if (isnan(PZEMVoltage))
-    //   {
-    //     oled.clear(PAGE);
-    //     oled.setCursor(0, 0);
-    //     oled.printf("-Sensor-\n\nno sensor\ndetect!");
-    //   }
+      if (isnan(PZEMVoltage))
+      {
+        oled.clear(PAGE);
+        oled.setCursor(0, 0);
+        oled.printf("-Sensor-\n\nno sensor\ndetect!");
+      }
 
     // display status
     iotwebconf::NetworkState curr_state = iotWebConf.getState();

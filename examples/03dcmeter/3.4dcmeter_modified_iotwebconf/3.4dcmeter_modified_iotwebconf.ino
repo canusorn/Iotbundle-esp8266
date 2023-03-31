@@ -153,20 +153,20 @@ void setup()
     Serial.begin(115200);
 
     // for clear eeprom jump D5 to GND
-    // pinMode(D5, INPUT_PULLUP);
-    // if (digitalRead(D5) == false)
-    // {
-    //     delay(1000);
-    //     if (digitalRead(D5) == false)
-    //     {
-    //         oled.clear(PAGE);
-    //         oled.setCursor(0, 0);
-    //         oled.print("Clear All data\n rebooting");
-    //         oled.display();
-    //         delay(1000);
-    //         clearEEPROM();
-    //     }
-    // }
+    pinMode(D5, INPUT_PULLUP);
+    if (digitalRead(D5) == false)
+    {
+        delay(1000);
+        if (digitalRead(D5) == false)
+        {
+            oled.clear(PAGE);
+            oled.setCursor(0, 0);
+            oled.print("Clear All data\n rebooting");
+            oled.display();
+            delay(1000);
+            clearEEPROM();
+        }
+    }
 
     PZEMSerial.begin(9600, SWSERIAL_8N2, MAX485_RO, MAX485_DI); // software serial สำหรับติดต่อกับ MAX485
 
@@ -357,12 +357,12 @@ void display_update()
     }
 
     // on error
-    //   if (isnan(PZEMVoltage))
-    //   {
-    //     oled.clear(PAGE);
-    //     oled.setCursor(0, 0);
-    //     oled.printf("-Sensor-\n\nno sensor\ndetect!");
-    //   }
+      if (isnan(PZEMVoltage))
+      {
+        oled.clear(PAGE);
+        oled.setCursor(0, 0);
+        oled.printf("-Sensor-\n\nno sensor\ndetect!");
+      }
 
     // display status
     iotwebconf::NetworkState curr_state = iotWebConf.getState();
