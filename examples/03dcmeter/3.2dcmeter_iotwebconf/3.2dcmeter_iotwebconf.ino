@@ -312,7 +312,7 @@ void loop()
         display_update();
 
         if (iot.need_ota)
-            iot.otaUpdate(); // addition version (DHT11, DHT22, DHT21)  ,  custom url
+            iot.otaUpdate("2" + String(NewshuntAddr)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
 
         startMillisPZEM = currentMillisPZEM; /* Set the starting point again for next counting time */
     }

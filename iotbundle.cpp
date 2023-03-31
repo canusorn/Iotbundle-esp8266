@@ -1148,6 +1148,9 @@ void Iotbundle::otaUpdate(String optional_version, String url)
 {
   // WiFiClient client;
 
+Serial.println(optional_version);
+return;
+
   ESPhttpUpdate.onStart([]()
                         { Serial.println("CALLBACK:  HTTP update process started"); });
 
