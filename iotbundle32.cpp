@@ -1,6 +1,6 @@
-#include "iotbundle.h"
+#include "iotbundle32.h"
 
-Iotbundle::Iotbundle(String project)
+Iotbundle32::Iotbundle32(String project)
 {
   // set project id
   setProjectID(project, 0);
@@ -9,7 +9,7 @@ Iotbundle::Iotbundle(String project)
   this->_esp_id = String(ESP.getChipId());
 }
 
-void Iotbundle::setProjectID(String project, uint8_t array_project)
+void Iotbundle32::setProjectID(String project, uint8_t array_project)
 {
   // set project id
   this->_project_id[array_project] = getProjectID(project);
@@ -28,9 +28,11 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
     _AllowIO &= 0b101100110;
   else if (this->_project_id[array_project] == 6)
     _AllowIO &= 0b111100001;
+  else if (this->_project_id[array_project] == 7)
+    _AllowIO &= 0b111111111;
 }
 
-void Iotbundle::begin(String email, String pass, String server)
+void Iotbundle32::begin(String email, String pass, String server)
 {
   Serial.println("Iotkiddie v." + version);
   Serial.println("more infomation at https://iotkiddie.com");
@@ -60,7 +62,7 @@ void Iotbundle::begin(String email, String pass, String server)
   login();
 }
 
-void Iotbundle::login()
+void Iotbundle32::login()
 {
   DEBUGLN("Begin -> email:" + this->_email + " server:" + this->_server);
 
@@ -125,7 +127,7 @@ void Iotbundle::login()
   }
 }
 
-void Iotbundle::addProject(String project)
+void Iotbundle32::addProject(String project)
 {
   uint8_t projectarray = projectCount();
   setProjectID(project, projectarray);
@@ -140,7 +142,7 @@ void Iotbundle::addProject(String project)
   }
 }
 
-void Iotbundle::projectSort()
+void Iotbundle32::projectSort()
 {
   for (int i = 1; i < sizeof(this->_project_id); ++i)
   {
@@ -157,7 +159,7 @@ void Iotbundle::projectSort()
   }
 }
 
-uint8_t Iotbundle::getProjectID(String project)
+uint8_t Iotbundle32::getProjectID(String project)
 {
   if (project == "CUSTOM")
   {
@@ -187,10 +189,17 @@ uint8_t Iotbundle::getProjectID(String project)
   {
     return 6;
   }
-  return 0;
+  else if (project == "32_VALUE")
+  {
+    return 7;
+  }
+  else
+  {
+    return 0;
+  }
 }
 
-void Iotbundle::handle()
+void Iotbundle32::handle()
 {
   uint32_t currentMillis = millis();
   if (currentMillis - _previousMillis >= sendtime * 1000)
@@ -221,7 +230,7 @@ void Iotbundle::handle()
   }
 }
 
-void Iotbundle::TimerHandle()
+void Iotbundle32::TimerHandle()
 {
   // uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
   uint8_t k = 0;
@@ -260,7 +269,7 @@ void Iotbundle::TimerHandle()
   }
 }
 
-void Iotbundle::updateProject()
+void Iotbundle32::updateProject()
 {
 
   if (_json_update == "")
@@ -299,80 +308,76 @@ void Iotbundle::updateProject()
     {
       DHT(i);
     }
-    else if (_project_id[i] == 5)
+    else if (_project_id[i] == 7)
     {
-      smartFarmSolar(i);
+      value32(i);
     }
-    else if (_project_id[i] == 6)
+
+    _json_update += ']';
+
+    // if (!newio_s)
+    readio();
+
+    // if (newio_c)
+    //   _json_update += ",\"io_c\":" + String(io);
+    // else if (newio_s)
+    //   _json_update += ",\"io_s\":" + String(io);
+
+    if (pin_s) // request pin from server
+      _json_update += ",\"pin_s\":1";
+    else if (pin_c) // pin from server updated
     {
-      acMeter_3p(i);
+      _json_update += ",\"pin_c\":1";
+      pin_c = false;
     }
-  }
 
-  _json_update += ']';
-
-  // if (!newio_s)
-  readio();
-
-  // if (newio_c)
-  //   _json_update += ",\"io_c\":" + String(io);
-  // else if (newio_s)
-  //   _json_update += ",\"io_s\":" + String(io);
-
-  if (pin_s) // request pin from server
-    _json_update += ",\"pin_s\":1";
-  else if (pin_c) // pin from server updated
-  {
-    _json_update += ",\"pin_c\":1";
-    pin_c = false;
-  }
-
-  if (pin_change)
-  {
-    _json_update += ",\"pin_change\":" + String(pin_change_checksum);
-  }
-
-  if (timer_s) // request timer from server
-  {
-    _json_update += ",\"timer_s\":1";
-    // timer_s = false;
-  }
-  else if (timer_c) // timer from server updated
-  {
-    _json_update += ",\"timer_c\":1";
-    timer_c = false;
-  }
-
-  if (daytimestamp_s) // request today timestamp from server
-  {
-    _json_update += ",\"daytimestamp_s\":1";
-  }
-
-  _json_update += "}";
-
-  DEBUGLN("sending data to server");
-
-  String payload = postData(_json_update, _update_url);
-  _json_update = "";
-  if (serverConnected)
-  {
-    _noConnect = 0;
-    if (payload != "")
+    if (pin_change)
     {
-      Stringparse(payload);
+      _json_update += ",\"pin_change\":" + String(pin_change_checksum);
     }
-  }
-  else
-  {
-    _noConnect++;
-    if (payload != "" && _noConnect >= 6) // if can't connect about 30 sec
-      this->noti = payload;               // display no oled
-  }
 
-  clearvar();
+    if (timer_s) // request timer from server
+    {
+      _json_update += ",\"timer_s\":1";
+      // timer_s = false;
+    }
+    else if (timer_c) // timer from server updated
+    {
+      _json_update += ",\"timer_c\":1";
+      timer_c = false;
+    }
+
+    if (daytimestamp_s) // request today timestamp from server
+    {
+      _json_update += ",\"daytimestamp_s\":1";
+    }
+
+    _json_update += "}";
+
+    DEBUGLN("sending data to server");
+
+    String payload = postData(_json_update, _update_url);
+    _json_update = "";
+    if (serverConnected)
+    {
+      _noConnect = 0;
+      if (payload != "")
+      {
+        Stringparse(payload);
+      }
+    }
+    else
+    {
+      _noConnect++;
+      if (payload != "" && _noConnect >= 6) // if can't connect about 30 sec
+        this->noti = payload;               // display no oled
+    }
+
+    clearvar();
+  }
 }
 
-int8_t Iotbundle::projectCount()
+int8_t Iotbundle32::projectCount()
 {
   for (uint8_t i = 0; i < sizeof(this->_project_id); i++)
   {
@@ -385,7 +390,7 @@ int8_t Iotbundle::projectCount()
   return -1;
 }
 
-void Iotbundle::forceUpdate(bool settolowall)
+void Iotbundle32::forceUpdate(bool settolowall)
 {
   if (this->_email && this->_server != "")
   {
@@ -403,7 +408,7 @@ void Iotbundle::forceUpdate(bool settolowall)
   }
 }
 
-void Iotbundle::setProject(String projectname)
+void Iotbundle32::setProject(String projectname)
 {
   // get project id
   uint8_t project_id = getProjectID(projectname);
@@ -416,7 +421,7 @@ void Iotbundle::setProject(String projectname)
   }
 }
 
-void Iotbundle::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
+void Iotbundle32::update(float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10)
 {
   if (var_index[activeProject] >= 200) // if almost overflow
     clearvar();
@@ -446,36 +451,54 @@ void Iotbundle::update(float var1, float var2, float var3, float var4, float var
   }
 }
 
-void Iotbundle::update(float v[3], float a[3], float p[3], float e[3], float f[3], float pf[3])
+void Iotbundle32::update32value(
+    float var1, float var2, float var3, float var4, float var5, float var6, float var7, float var8, float var9, float var10,
+    float var11, float var12, float var13, float var14, float var15, float var16, float var17, float var18, float var19, float var20,
+    float var21, float var22, float var23, float var24, float var25, float var26, float var27, float var28, float var29, float var30, float var31, float var32)
 {
-  for (uint8_t i = 0; i < 3; i++)
+  if (!isnan(var1) || !isnan(var2) || !isnan(var3) || !isnan(var4) || !isnan(var5) || !isnan(var6) || !isnan(var7) || !isnan(var8) || !isnan(var9) || !isnan(var10)) // not update if all nan
   {
+    DEBUG("updated data 32value ->");
 
-    if (var_index_3p[i] >= 200) // if almost overflow
-      clearvar();
+    var_32_value[0] = var1;
+    var_32_value[1] = var2;
+    var_32_value[2] = var3;
+    var_32_value[3] = var4;
+    var_32_value[4] = var5;
+    var_32_value[5] = var6;
+    var_32_value[6] = var7;
+    var_32_value[7] = var8;
+    var_32_value[8] = var9;
+    var_32_value[9] = var10;
+    var_32_value[10] = var11;
+    var_32_value[11] = var12;
+    var_32_value[12] = var13;
+    var_32_value[13] = var14;
+    var_32_value[14] = var15;
+    var_32_value[15] = var16;
+    var_32_value[16] = var17;
+    var_32_value[17] = var18;
+    var_32_value[18] = var19;
+    var_32_value[19] = var20;
+    var_32_value[20] = var21;
+    var_32_value[21] = var22;
+    var_32_value[22] = var23;
+    var_32_value[23] = var24;
+    var_32_value[24] = var25;
+    var_32_value[25] = var26;
+    var_32_value[26] = var27;
+    var_32_value[27] = var28;
+    var_32_value[28] = var29;
+    var_32_value[29] = var30;
+    var_32_value[30] = var31;
+    var_32_value[31] = var32;
 
-    if (!isnan(v[i]) || !isnan(a[i]) || !isnan(p[i]) || !isnan(e[i]) || !isnan(f[i]) || !isnan(pf[i]))
-    {
-      var_index_3p[i]++;
-      var_sum_3p[0][i] += v[i];
-      var_sum_3p[1][i] += a[i];
-      var_sum_3p[2][i] += p[i];
-      var_sum_3p[3][i] += e[i];
-      var_sum_3p[4][i] += f[i];
-      var_sum_3p[5][i] += pf[i];
-
-      DEBUG("updated data " + String(var_index_3p[i]) + " -> ");
-      for (uint8_t j = 0; j < 6; j++)
-      {
-        DEBUG(String(var_sum_3p[j][i]) + ", ");
-      }
-      DEBUGLN();
-    }
+    DEBUGLN();
+    DEBUGLN("FreeHeap : " + String(ESP.getFreeHeap()));
   }
-  DEBUGLN("FreeHeap : " + String(ESP.getFreeHeap()));
 }
 
-void Iotbundle::clearvar()
+void Iotbundle32::clearvar()
 {
   for (uint8_t i = 0; i < 10; i++)
   {
@@ -488,21 +511,9 @@ void Iotbundle::clearvar()
   {
     var_index[j] = 0;
   }
-
-  for (uint8_t i = 0; i < 6; i++)
-  {
-    for (uint8_t i2 = 0; i2 < 3; i2++)
-    {
-      var_sum_3p[i][i2] = 0;
-    }
-  }
-  for (uint8_t j = 0; j < 3; j++)
-  {
-    var_index_3p[j] = 0;
-  }
 }
 
-String Iotbundle::getData(String data)
+String Iotbundle32::getData(String data)
 {
   String payload;
   if (_server[4] == 's')
@@ -511,7 +522,7 @@ String Iotbundle::getData(String data)
     return getHttp(data);
 }
 
-String Iotbundle::postData(String data, String url)
+String Iotbundle32::postData(String data, String url)
 {
   String payload;
   if (_server[4] == 's')
@@ -520,7 +531,7 @@ String Iotbundle::postData(String data, String url)
     return postHttp(data, url);
 }
 
-String Iotbundle::getHttp(String data)
+String Iotbundle32::getHttp(String data)
 {
 
   String payload;
@@ -586,7 +597,7 @@ String Iotbundle::getHttp(String data)
   return payload;
 }
 
-String Iotbundle::getHttps(String data)
+String Iotbundle32::getHttps(String data)
 {
   String payload;
 
@@ -656,7 +667,7 @@ String Iotbundle::getHttps(String data)
   return payload;
 }
 
-String Iotbundle::postHttp(String data, String url)
+String Iotbundle32::postHttp(String data, String url)
 {
   String payload;
   WiFiClient client;
@@ -719,7 +730,7 @@ String Iotbundle::postHttp(String data, String url)
   return payload;
 }
 
-String Iotbundle::postHttps(String data, String url)
+String Iotbundle32::postHttps(String data, String url)
 {
   String payload;
 
@@ -784,12 +795,12 @@ String Iotbundle::postHttps(String data, String url)
   return payload;
 }
 
-bool Iotbundle::status()
+bool Iotbundle32::status()
 {
   return serverConnected;
 }
 
-void Iotbundle::iohandle_s()
+void Iotbundle32::iohandle_s()
 { // handle io from server
   // DEBUGLN("io:" + String(io, BIN));
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15}; // GPIO from d0 d1 d2 ... d8
@@ -820,7 +831,7 @@ void Iotbundle::iohandle_s()
   DEBUGLN();
 }
 
-void Iotbundle::readio()
+void Iotbundle32::readio()
 {
   for (int i = 0; i <= 8; i++)
   {
@@ -864,19 +875,19 @@ void Iotbundle::readio()
   DEBUGLN("[pinread after] binary : " + String(pin_change_checksum, BIN));
 }
 
-void Iotbundle::setAllowIO(uint16_t allowio)
+void Iotbundle32::setAllowIO(uint16_t allowio)
 {
   this->_AllowIO = allowio;
   // init_io();
 }
 
-uint8_t Iotbundle::wemosGPIO(uint8_t pin)
+uint8_t Iotbundle32::wemosGPIO(uint8_t pin)
 {
   uint8_t wemosGPIO[] = {16, 5, 4, 0, 2, 14, 12, 13, 15};
   return wemosGPIO[pin];
 }
 
-void Iotbundle::Stringparse(String payload)
+void Iotbundle32::Stringparse(String payload)
 {
   int str_len = payload.length() + 1;
   char buff[str_len];
@@ -971,7 +982,7 @@ void Iotbundle::Stringparse(String payload)
   }
 }
 
-void Iotbundle::pinhandle_s(String pindata)
+void Iotbundle32::pinhandle_s(String pindata)
 {
   pin_c = true;
   pin_s = false;
@@ -1054,7 +1065,7 @@ void Iotbundle::pinhandle_s(String pindata)
   }
 }
 
-void Iotbundle::Timerparse(String timer)
+void Iotbundle32::Timerparse(String timer)
 {
   //  format {pin}:{start}:{interval}:{active h-l},{pin}:{start}:{interval}:{active h-l}
   timer_c = true;
@@ -1144,7 +1155,7 @@ void Iotbundle::Timerparse(String timer)
   }
 }
 
-void Iotbundle::otaUpdate(String optional_version, String url)
+void Iotbundle32::otaUpdate(String optional_version, String url)
 {
   // WiFiClient client;
 
@@ -1244,7 +1255,7 @@ void Iotbundle::otaUpdate(String optional_version, String url)
   }
 }
 
-void Iotbundle::interrupt1sec()
+void Iotbundle32::interrupt1sec()
 {
   // today timestamp update
   daytimestamp++;
@@ -1260,12 +1271,12 @@ void Iotbundle::interrupt1sec()
   }
 }
 
-uint32_t Iotbundle::getTodayTimestamp()
+uint32_t Iotbundle32::getTodayTimestamp()
 {
   return daytimestamp;
 }
 
-void Iotbundle::custom(uint8_t id)
+void Iotbundle32::custom(uint8_t id)
 {
   // get project id
   uint8_t project_id = getProjectID("CUSTOM");
@@ -1318,7 +1329,7 @@ void Iotbundle::custom(uint8_t id)
   _json_update += "}";
 }
 
-void Iotbundle::acMeter(uint8_t id)
+void Iotbundle32::acMeter(uint8_t id)
 {
   // get project id
   uint8_t project_id = getProjectID("AC_METER");
@@ -1359,7 +1370,7 @@ void Iotbundle::acMeter(uint8_t id)
   _json_update += "}";
 }
 
-void Iotbundle::pmMeter(uint8_t id)
+void Iotbundle32::pmMeter(uint8_t id)
 {
   // get project id
   uint8_t project_id = getProjectID("PM_METER");
@@ -1391,7 +1402,7 @@ void Iotbundle::pmMeter(uint8_t id)
   _json_update += "}";
 }
 
-void Iotbundle::dcMeter(uint8_t id)
+void Iotbundle32::dcMeter(uint8_t id)
 {
   // get project id
   uint8_t project_id = getProjectID("DC_METER");
@@ -1426,7 +1437,7 @@ void Iotbundle::dcMeter(uint8_t id)
   _json_update += "}";
 }
 
-void Iotbundle::DHT(uint8_t id)
+void Iotbundle32::DHT(uint8_t id)
 {
   // get project id
   uint8_t project_id = getProjectID("DHT");
@@ -1456,80 +1467,120 @@ void Iotbundle::DHT(uint8_t id)
   _json_update += "}";
 }
 
-void Iotbundle::smartFarmSolar(uint8_t id)
+void Iotbundle32::value32(uint8_t id)
 {
   // get project id
-  uint8_t project_id = getProjectID("smartfarm_solar");
+  uint8_t project_id = getProjectID("32_VALUE");
 
   // find project array index
-  uint8_t array;
-  for (byte i = 0; i < sizeof(this->_project_id); i++)
-  {
-    if ((_project_id[i]) == project_id)
-      array = i;
-  }
+  // uint8_t array;
+  // for (byte i = 0; i < sizeof(this->_project_id); i++)
+  // {
+  //   if ((_project_id[i]) == project_id)
+  //     array = i;
+  // }
 
   // calculate
-  float humid = var_sum[0][array] / var_index[array];
-  float temp = var_sum[1][array] / var_index[array];
-  uint16_t vbatt = var_sum[2][array] / var_index[array];
+  float c0 = var_32_value[0];
+  float c1 = var_32_value[1];
+  float c2 = var_32_value[2];
+  float c3 = var_32_value[3];
+  float c4 = var_32_value[4];
+  float c5 = var_32_value[5];
+  float c6 = var_32_value[6];
+  float c7 = var_32_value[7];
+  float c8 = var_32_value[8];
+  float c9 = var_32_value[9];
+  float c10 = var_32_value[10];
+  float c11 = var_32_value[11];
+  float c12 = var_32_value[12];
+  float c13 = var_32_value[13];
+  float c14 = var_32_value[14];
+  float c15 = var_32_value[15];
+  float c16 = var_32_value[16];
+  float c17 = var_32_value[17];
+  float c18 = var_32_value[18];
+  float c19 = var_32_value[19];
+  float c20 = var_32_value[20];
+  float c21 = var_32_value[21];
+  float c22 = var_32_value[22];
+  float c23 = var_32_value[23];
+  float c24 = var_32_value[24];
+  float c25 = var_32_value[25];
+  float c26 = var_32_value[26];
+  float c27 = var_32_value[27];
+  float c28 = var_32_value[28];
+  float c29 = var_32_value[29];
+  float c30 = var_32_value[30];
+  float c31 = var_32_value[31];
 
-  if (var_index[array])
-  { // validate
-    if (humid > 0 && humid <= 100 && !isnan(humid))
-      _json_update += ",\"humid\":" + String(humid, 1);
-    if (temp > 0 && temp <= 80 && !isnan(temp))
-      _json_update += ",\"temp\":" + String(temp, 1);
-    if (vbatt >= 2000 && vbatt <= 8000 && !isnan(vbatt))
-      _json_update += ",\"vbatt\":" + String(vbatt);
-  }
-  _json_update += ",\"valve\":";
-  _json_update += (digitalRead(D1)) ? "1" : "0";
+  _json_update += "{\"project_id\":" + String(project_id);
 
-  _json_update += "}";
-}
-
-void Iotbundle::acMeter_3p(uint8_t id)
-{
-  // get project id
-  uint8_t project_id = getProjectID("AC_METER_3P");
-
-  // find project array index
-  uint8_t array;
-  for (byte i = 0; i < sizeof(this->_project_id); i++)
-  {
-    if ((_project_id[i]) == project_id)
-      array = i;
-  }
-
-  _json_update += "{\"project_id\":" + String(_project_id[id]);
-
-  for (uint8_t i = 0; i < 3; i++)
-  {
-    // calculate
-    float v = var_sum_3p[0][i] / var_index_3p[i];
-    float a = var_sum_3p[1][i] / var_index_3p[i];
-    float p = var_sum_3p[2][i] / var_index_3p[i];
-    float e = var_sum_3p[3][i] / var_index_3p[i];
-    float f = var_sum_3p[4][i] / var_index_3p[i];
-    float pf = var_sum_3p[5][i] / var_index_3p[i];
-
-    if (var_index_3p[i])
-    { // validate
-      if (v >= 60 && v <= 260 && !isnan(v))
-        _json_update += ",\"v" + String(i + 1) + "\":" + String(v, 1);
-      if (a >= 0 && a <= 100 && !isnan(a))
-        _json_update += ",\"i" + String(i + 1) + "\":" + String(a, 3);
-      if (p >= 0 && p <= 24000 && !isnan(p))
-        _json_update += ",\"p" + String(i + 1) + "\":" + String(p, 1);
-      if (e >= 0 && e <= 10000 && !isnan(e))
-        _json_update += ",\"e" + String(i + 1) + "\":" + String(e, 3);
-      if (f >= 40 && f <= 70 && !isnan(f))
-        _json_update += ",\"f" + String(i + 1) + "\":" + String(f, 1);
-      if (pf >= 0 && pf <= 1 && !isnan(pf))
-        _json_update += ",\"pf" + String(i + 1) + "\":" + String(pf, 2);
-    }
-  }
+  // validate
+  if (!isnan(c0))
+    _json_update += ",\"c0\":" + String(c0, 1);
+  if (!isnan(c1))
+    _json_update += ",\"c1\":" + String(c1, 1);
+  if (!isnan(c2))
+    _json_update += ",\"c2\":" + String(c2, 1);
+  if (!isnan(c3))
+    _json_update += ",\"c3\":" + String(c3, 1);
+  if (!isnan(c4))
+    _json_update += ",\"c4\":" + String(c4, 1);
+  if (!isnan(c5))
+    _json_update += ",\"c5\":" + String(c5, 1);
+  if (!isnan(c6))
+    _json_update += ",\"c6\":" + String(c6, 1);
+  if (!isnan(c7))
+    _json_update += ",\"c7\":" + String(c7, 1);
+  if (!isnan(c8))
+    _json_update += ",\"c8\":" + String(c8, 1);
+  if (!isnan(c9))
+    _json_update += ",\"c9\":" + String(c9, 1);
+  if (!isnan(c10))
+    _json_update += ",\"c10\":" + String(c10, 1);
+  if (!isnan(c11))
+    _json_update += ",\"c11\":" + String(c11, 1);
+  if (!isnan(c12))
+    _json_update += ",\"c12\":" + String(c12, 1);
+  if (!isnan(c13))
+    _json_update += ",\"c13\":" + String(c13, 1);
+  if (!isnan(c14))
+    _json_update += ",\"c14\":" + String(c14, 1);
+  if (!isnan(c15))
+    _json_update += ",\"c15\":" + String(c15, 1);
+  if (!isnan(c16))
+    _json_update += ",\"c16\":" + String(c16, 1);
+  if (!isnan(c17))
+    _json_update += ",\"c17\":" + String(c17, 1);
+  if (!isnan(c18))
+    _json_update += ",\"c18\":" + String(c18, 1);
+  if (!isnan(c19))
+    _json_update += ",\"c19\":" + String(c19, 1);
+  if (!isnan(c20))
+    _json_update += ",\"c20\":" + String(c20, 1);
+  if (!isnan(c21))
+    _json_update += ",\"c21\":" + String(c21, 1);
+  if (!isnan(c22))
+    _json_update += ",\"c22\":" + String(c22, 1);
+  if (!isnan(c23))
+    _json_update += ",\"c23\":" + String(c23, 1);
+  if (!isnan(c24))
+    _json_update += ",\"c24\":" + String(c24, 1);
+  if (!isnan(c25))
+    _json_update += ",\"c25\":" + String(c25, 1);
+  if (!isnan(c26))
+    _json_update += ",\"c26\":" + String(c26, 1);
+  if (!isnan(c27))
+    _json_update += ",\"c27\":" + String(c27, 1);
+  if (!isnan(c28))
+    _json_update += ",\"c28\":" + String(c28, 1);
+  if (!isnan(c29))
+    _json_update += ",\"c29\":" + String(c29, 1);
+  if (!isnan(c30))
+    _json_update += ",\"c30\":" + String(c30, 1);
+  if (!isnan(c31))
+    _json_update += ",\"c31\":" + String(c31, 1);
 
   _json_update += "}";
 }
