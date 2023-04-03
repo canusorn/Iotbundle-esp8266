@@ -29,7 +29,7 @@ void setup()
     }
 
     // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-    iot.begin(email, pass);
+    iot.begin(email, pass,"http://192.168.0.100");
 }
 
 void loop()
