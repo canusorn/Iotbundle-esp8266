@@ -28,6 +28,8 @@ void Iotbundle::setProjectID(String project, uint8_t array_project)
     _AllowIO &= 0b101100110;
   else if (this->_project_id[array_project] == 6)
     _AllowIO &= 0b111100001;
+  else if (this->_project_id[array_project] == 6)
+    _AllowIO &= 0b100011000;
 }
 
 void Iotbundle::begin(String email, String pass, String server)
@@ -187,6 +189,10 @@ uint8_t Iotbundle::getProjectID(String project)
   {
     return 6;
   }
+  else if (project == "BATTERY")
+  {
+    return 7;
+  }
   return 0;
 }
 
@@ -306,6 +312,10 @@ void Iotbundle::updateProject()
     else if (_project_id[i] == 6)
     {
       acMeter_3p(i);
+    }
+    else if (_project_id[i] == 7)
+    {
+      battery(i);
     }
   }
 
@@ -1531,5 +1541,52 @@ void Iotbundle::acMeter_3p(uint8_t id)
     }
   }
 
+  _json_update += "}";
+}
+
+void Iotbundle::battery(uint8_t id)
+{
+  // get project id
+  uint8_t project_id = getProjectID("BATTERY");
+
+  // find project array index
+  uint8_t array;
+  for (byte i = 0; i < sizeof(this->_project_id); i++)
+  {
+    if ((_project_id[i]) == project_id)
+      array = i;
+  }
+
+  // calculate
+  float v1 = var_sum[0][array] / var_index[array];
+  float i1 = var_sum[1][array] / var_index[array];
+  float p1 = var_sum[2][array] / var_index[array];
+  float e1 = var_sum[3][array] / var_index[array];
+  float v2 = var_sum[4][array] / var_index[array];
+  float i2 = var_sum[5][array] / var_index[array];
+  float p2 = var_sum[6][array] / var_index[array];
+  float e2 = var_sum[7][array] / var_index[array];
+
+  _json_update += "{\"project_id\":" + String(_project_id[id]);
+
+  if (var_index[array])
+  { // validate
+    if (v1 >= 0 && v1 <= 350 && !isnan(v1))
+      _json_update += ",\"v1\":" + String(v1, 2);
+    if (i1 >= 0 && i1 <= 350 && !isnan(i1))
+      _json_update += ",\"c1\":" + String(i1, 2);
+    if (p1 >= 0 && p1 <= 90000 && !isnan(p1))
+      _json_update += ",\"p1\":" + String(p1, 1);
+    if (e1 >= 0 && e1 <= 90000 && !isnan(e1))
+      _json_update += ",\"e1\":" + String(e1, 3);
+    if (v2 >= 0 && v2 <= 350 && !isnan(v2))
+      _json_update += ",\"v2\":" + String(v2, 2);
+    if (i2 >= 0 && i2 <= 350 && !isnan(i2))
+      _json_update += ",\"c2\":" + String(i2, 2);
+    if (p2 >= 0 && p2 <= 90000 && !isnan(p2))
+      _json_update += ",\"p2\":" + String(p2, 1);
+    if (e2 >= 0 && e2 <= 90000 && !isnan(e2))
+      _json_update += ",\"e2\":" + String(e2, 3);
+  }
   _json_update += "}";
 }

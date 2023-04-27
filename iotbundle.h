@@ -135,6 +135,9 @@ private:
   // handle data acmeter 3 phase'project
   void acMeter_3p(uint8_t id = 0);
 
+  // handle data battery'project
+  void battery(uint8_t id);
+
 public:
   Iotbundle(String project);
 
