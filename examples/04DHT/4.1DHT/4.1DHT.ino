@@ -16,15 +16,20 @@ String pass = "12345678";
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!
-//#define DHTTYPE DHT11   // DHT 11
+// #define DHTTYPE DHT11   // DHT 11
 #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
-//#define DHTTYPE DHT21   // DHT 21 (AM2301)
+// #define DHTTYPE DHT21   // DHT 21 (AM2301)
 DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long previousMillis = 0;
 
 void setup()
 {
+    digitalWrite(D6, HIGH);
+    digitalWrite(D8, LOW);
+    pinMode(D6, OUTPUT);
+    pinMode(D8, OUTPUT);
+
     Serial.begin(115200);
     dht.begin();
 

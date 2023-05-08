@@ -42,7 +42,7 @@
 #include <iotbundle.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
-#define PROJECT "DC_METER"
+#define PROJECT "BATTERY"
 Iotbundle iot(PROJECT);
 
 SoftwareSerial PZEMSerial;
@@ -53,12 +53,14 @@ MicroOLED oled(-1, 0);
 #define MAX485_DI D3
 
 // Address ของ PZEM-017 : 0x01-0xF7
-static uint8_t pzemSlaveAddr = 0x01;
+static uint8_t pzemSlaveAddr1 = 0x01;
+static uint8_t pzemSlaveAddr2 = 0x02;
 
 // ตั้งค่า shunt -->> 0x0000-100A, 0x0001-50A, 0x0002-200A, 0x0003-300A
-static uint16_t NewshuntAddr = 0x0001;
+static uint16_t NewshuntAddr1 = 0x0001;
+static uint16_t NewshuntAddr2 = 0x0002;
 
-const char thingName[] = "dcmeter";
+const char thingName[] = "battery";
 const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
@@ -66,10 +68,6 @@ const char wifiInitialApPassword[] = "iotbundle";
 
 // timer interrupt
 Ticker timestamp;
-
-ModbusMaster node;
-
-float PZEMVoltage, PZEMCurrent, PZEMPower, PZEMEnergy;
 
 unsigned long startMillisPZEM;         // start counting time for LCD Display */
 unsigned long currentMillisPZEM;       // current counting time for LCD Display */
@@ -186,8 +184,6 @@ void setup()
     oled.print(" IoTbundle");
     oled.display();
 
-    node.begin(pzemSlaveAddr, PZEMSerial);
-
     login.addItem(&emailParam);
     login.addItem(&passParam);
     login.addItem(&serverParam);
@@ -240,16 +236,17 @@ void setup()
         oled.print(".");
         oled.display();
     }
-    setShunt(pzemSlaveAddr);            // ตั้งค่า shunt
-    changeAddress(0xF8, pzemSlaveAddr); // ตั้งค่า address 0x01 ซื่งเป็นค่า default ของตัว PZEM-017
-    // resetEnergy();                                   // รีเซ็ตค่า Energy[Wh] (หน่วยใช้ไฟสะสม)
+    setShunt(pzemSlaveAddr1, NewshuntAddr1); // ตั้งค่า shunt1
+    setShunt(pzemSlaveAddr2, NewshuntAddr2); // ตั้งค่า shunt2
+    // resetEnergy(pzemSlaveAddr1);                                   // รีเซ็ตค่า Energy[Wh] (หน่วยใช้ไฟสะสม)
 
-        // set which pin can change
+    // set which pin can change
     iot.setAllowIO(0b111100001);
 }
 
 void loop()
 {
+
     iotWebConf.doLoop();
     server.handleClient();
     MDNS.update();
@@ -261,60 +258,110 @@ void loop()
     // อ่านค่าจาก PZEM-017
     if (currentMillisPZEM - startMillisPZEM >= periodPZEM) /* for every x seconds, run the codes below*/
     {
-        uint8_t result;                              /* Declare variable "result" as 8 bits */
-        result = node.readInputRegisters(0x0000, 6); /* read the 9 registers (information) of the PZEM-014 / 016 starting 0x0000 (voltage information) kindly refer to manual)*/
-        if (result == node.ku8MBSuccess)             /* If there is a response */
-        {
-            uint32_t tempdouble = 0x00000000;                     /* Declare variable "tempdouble" as 32 bits with initial value is 0 */
-            PZEMVoltage = node.getResponseBuffer(0x0000) / 100.0; /* get the 16bit value for the voltage value, divide it by 100 (as per manual) */
-            // 0x0000 to 0x0008 are the register address of the measurement value
-            PZEMCurrent = node.getResponseBuffer(0x0001) / 100.0; /* get the 16bit value for the current value, divide it by 100 (as per manual) */
-
-            tempdouble = (node.getResponseBuffer(0x0003) << 16) + node.getResponseBuffer(0x0002); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-            PZEMPower = tempdouble / 10.0;                                                        /* Divide the value by 10 to get actual power value (as per manual) */
-
-            tempdouble = (node.getResponseBuffer(0x0005) << 16) + node.getResponseBuffer(0x0004); /* get the energy value. Energy value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-            PZEMEnergy = tempdouble;
-            PZEMEnergy /= 1000; // to kWh
-
-            /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-            ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง*/
-            iot.update(PZEMVoltage, PZEMCurrent, PZEMPower, PZEMEnergy);
-        }
-        else // ถ้าติดต่อ PZEM-017 ไม่ได้ ให้ใส่ค่า NAN(Not a Number)
-        {
-            PZEMVoltage = NAN;
-            PZEMCurrent = NAN;
-            PZEMPower = NAN;
-            PZEMEnergy = NAN;
-        }
-
-        // แสดงค่าที่ได้จากบน Serial monitor
-        Serial.print("Vdc : ");
-        Serial.print(PZEMVoltage);
-        Serial.println(" V ");
-        Serial.print("Idc : ");
-        Serial.print(PZEMCurrent);
-        Serial.println(" A ");
-        Serial.print("Power : ");
-        Serial.print(PZEMPower);
-        Serial.println(" W ");
-        Serial.print("Energy : ");
-        Serial.print(PZEMEnergy);
-        Serial.println(" kWh ");
-
-        // แสดงค่าบน OLED
-        display_update();
-
-        if (iot.need_ota)
-            iot.otaUpdate("4" + String(NewshuntAddr)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
-
         startMillisPZEM = currentMillisPZEM; /* Set the starting point again for next counting time */
+
+        readSensor();
     }
 }
 
+void readSensor()
+{
+    float PZEMVoltage[2], PZEMCurrent[2], PZEMPower[2], PZEMEnergy[2];
+
+    ModbusMaster node1;
+    ModbusMaster node2;
+
+    node1.begin(pzemSlaveAddr1, PZEMSerial);
+    node2.begin(pzemSlaveAddr2, PZEMSerial);
+
+    uint8_t result;                               /* Declare variable "result" as 8 bits */
+    result = node1.readInputRegisters(0x0000, 6); /* read the 9 registers (information) of the PZEM-014 / 016 starting 0x0000 (voltage information) kindly refer to manual)*/
+    if (result == node1.ku8MBSuccess)             /* If there is a response */
+    {
+        uint32_t tempdouble = 0x00000000;                         /* Declare variable "tempdouble" as 32 bits with initial value is 0 */
+        PZEMVoltage[0] = node1.getResponseBuffer(0x0000) / 100.0; /* get the 16bit value for the voltage value, divide it by 100 (as per manual) */
+        // 0x0000 to 0x0008 are the register address of the measurement value
+        PZEMCurrent[0] = node1.getResponseBuffer(0x0001) / 100.0; /* get the 16bit value for the current value, divide it by 100 (as per manual) */
+
+        tempdouble = (node1.getResponseBuffer(0x0003) << 16) + node1.getResponseBuffer(0x0002); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        PZEMPower[0] = tempdouble / 10.0;                                                       /* Divide the value by 10 to get actual power value (as per manual) */
+
+        tempdouble = (node1.getResponseBuffer(0x0005) << 16) + node1.getResponseBuffer(0x0004); /* get the energy value. Energy value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        PZEMEnergy[0] = tempdouble;
+        PZEMEnergy[0] /= 1000; // to kWh
+    }
+    else // ถ้าติดต่อ PZEM-017 ไม่ได้ ให้ใส่ค่า NAN(Not a Number)
+    {
+        PZEMVoltage[0] = NAN;
+        PZEMCurrent[0] = NAN;
+        PZEMPower[0] = NAN;
+        PZEMEnergy[0] = NAN;
+    }
+
+    // แสดงค่าที่ได้จากบน Serial monitor
+    Serial.print("Vdc1 : ");
+    Serial.print(PZEMVoltage[0]);
+    Serial.println(" V ");
+    Serial.print("Idc1 : ");
+    Serial.print(PZEMCurrent[0]);
+    Serial.println(" A ");
+    Serial.print("Power1 : ");
+    Serial.print(PZEMPower[0]);
+    Serial.println(" W ");
+    Serial.print("Energy1 : ");
+    Serial.print(PZEMEnergy[0]);
+    Serial.println(" kWh ");
+
+    result = node2.readInputRegisters(0x0000, 6); /* read the 9 registers (information) of the PZEM-014 / 016 starting 0x0000 (voltage information) kindly refer to manual)*/
+    if (result == node2.ku8MBSuccess)             /* If there is a response */
+    {
+        uint32_t tempdouble = 0x00000000;                         /* Declare variable "tempdouble" as 32 bits with initial value is 0 */
+        PZEMVoltage[1] = node2.getResponseBuffer(0x0000) / 100.0; /* get the 16bit value for the voltage value, divide it by 100 (as per manual) */
+        // 0x0000 to 0x0008 are the register address of the measurement value
+        PZEMCurrent[1] = node2.getResponseBuffer(0x0001) / 100.0; /* get the 16bit value for the current value, divide it by 100 (as per manual) */
+
+        tempdouble = (node2.getResponseBuffer(0x0003) << 16) + node2.getResponseBuffer(0x0002); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        PZEMPower[1] = tempdouble / 10.0;                                                       /* Divide the value by 10 to get actual power value (as per manual) */
+
+        tempdouble = (node2.getResponseBuffer(0x0005) << 16) + node2.getResponseBuffer(0x0004); /* get the energy value. Energy value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        PZEMEnergy[1] = tempdouble;
+        PZEMEnergy[1] /= 1000; // to kWh
+    }
+    else // ถ้าติดต่อ PZEM-017 ไม่ได้ ให้ใส่ค่า NAN(Not a Number)
+    {
+        PZEMVoltage[1] = NAN;
+        PZEMCurrent[1] = NAN;
+        PZEMPower[1] = NAN;
+        PZEMEnergy[1] = NAN;
+    }
+
+    // แสดงค่าที่ได้จากบน Serial monitor
+    Serial.print("Vdc2 : ");
+    Serial.print(PZEMVoltage[1]);
+    Serial.println(" V ");
+    Serial.print("Idc2 : ");
+    Serial.print(PZEMCurrent[1]);
+    Serial.println(" A ");
+    Serial.print("Power2 : ");
+    Serial.print(PZEMPower[1]);
+    Serial.println(" W ");
+    Serial.print("Energy2 : ");
+    Serial.print(PZEMEnergy[1]);
+    Serial.println(" kWh ");
+
+    // แสดงค่าบน OLED
+    display_update(PZEMVoltage, PZEMCurrent, PZEMPower, PZEMEnergy);
+
+    /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+         ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง*/
+    iot.update(PZEMVoltage[0], PZEMCurrent[0], PZEMPower[0], PZEMEnergy[0], PZEMVoltage[1], PZEMCurrent[1], PZEMPower[1], PZEMEnergy[1]);
+
+    if (iot.need_ota)
+        iot.otaUpdate(String(NewshuntAddr1) + "-" + String(NewshuntAddr2)); // addition version (DHT11, DHT22, DHT21)  ,  custom url
+}
+
 // ---- ฟังก์ชันแสดงผลฝ่านจอ OLED ----
-void display_update()
+void display_update(float PZEMVoltage[2], float PZEMCurrent[2], float PZEMPower[2], float PZEMEnergy[2])
 {
     //------Update OLED------
     oled.clear(PAGE);
@@ -357,12 +404,12 @@ void display_update()
     }
 
     // on error
-      if (isnan(PZEMVoltage))
-      {
+    if (isnan(PZEMVoltage))
+    {
         oled.clear(PAGE);
         oled.setCursor(0, 0);
         oled.printf("-Sensor-\n\nno sensor\ndetect!");
-      }
+    }
 
     // display status
     iotwebconf::NetworkState curr_state = iotWebConf.getState();
@@ -473,7 +520,7 @@ void display_update()
     oled.display();
 }
 
-void setShunt(uint8_t slaveAddr) // Change the slave address of a node
+void setShunt(uint8_t slaveAddr, uint16_t NewshuntAddr) // Change the slave address of a node
 {
 
     /* 1- PZEM-017 DC Energy Meter */
@@ -499,11 +546,10 @@ void setShunt(uint8_t slaveAddr) // Change the slave address of a node
     delay(100);
 }
 
-void resetEnergy() // reset energy for Meter 1
+void resetEnergy(uint8_t slaveAddr) // reset energy for Meter 1
 {
     uint16_t u16CRC = 0xFFFF;           /* declare CRC check 16 bits*/
     static uint8_t resetCommand = 0x42; /* reset command code*/
-    uint8_t slaveAddr = pzemSlaveAddr;  // if you set different address, make sure this slaveAddr must change also
     u16CRC = crc16_update(u16CRC, slaveAddr);
     u16CRC = crc16_update(u16CRC, resetCommand);
     PZEMSerial.write(slaveAddr);        /* send device address in 8 bit*/
@@ -511,126 +557,4 @@ void resetEnergy() // reset energy for Meter 1
     PZEMSerial.write(lowByte(u16CRC));  /* send CRC check code low byte  (1st part) */
     PZEMSerial.write(highByte(u16CRC)); /* send CRC check code high byte (2nd part) */
     delay(100);
-}
-
-void changeAddress(uint8_t OldslaveAddr, uint8_t NewslaveAddr) // Change the slave address of a node
-{
-
-    /* 1- PZEM-017 DC Energy Meter */
-
-    static uint8_t SlaveParameter = 0x06;        /* Write command code to PZEM */
-    static uint16_t registerAddress = 0x0002;    /* Modbus RTU device address command code */
-    uint16_t u16CRC = 0xFFFF;                    /* declare CRC check 16 bits*/
-    u16CRC = crc16_update(u16CRC, OldslaveAddr); // Calculate the crc16 over the 6bytes to be send
-    u16CRC = crc16_update(u16CRC, SlaveParameter);
-    u16CRC = crc16_update(u16CRC, highByte(registerAddress));
-    u16CRC = crc16_update(u16CRC, lowByte(registerAddress));
-    u16CRC = crc16_update(u16CRC, highByte(NewslaveAddr));
-    u16CRC = crc16_update(u16CRC, lowByte(NewslaveAddr));
-    PZEMSerial.write(OldslaveAddr); /* these whole process code sequence refer to manual*/
-    PZEMSerial.write(SlaveParameter);
-    PZEMSerial.write(highByte(registerAddress));
-    PZEMSerial.write(lowByte(registerAddress));
-    PZEMSerial.write(highByte(NewslaveAddr));
-    PZEMSerial.write(lowByte(NewslaveAddr));
-    PZEMSerial.write(lowByte(u16CRC));
-    PZEMSerial.write(highByte(u16CRC));
-    delay(100);
-}
-
-void handleRoot()
-{
-    // -- Let IotWebConf test and handle captive portal requests.
-    if (iotWebConf.handleCaptivePortal())
-    {
-        // -- Captive portal request were already served.
-        return;
-    }
-    String s = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\"/>";
-    s += "<title>Iotkiddie AC Powermeter config</title>";
-    if (iotWebConf.getState() == iotwebconf::NotConfigured)
-        s += "<script>\nlocation.href='/config';\n</script>";
-    s += "</head><body>IoTkiddie config data";
-    s += "<ul>";
-    s += "<li>Device name : ";
-    s += String(iotWebConf.getThingName());
-    s += "<li>อีเมลล์ : ";
-    s += emailParamValue;
-    s += "<li>WIFI SSID : ";
-    s += String(iotWebConf.getSSID());
-    s += "<li>RSSI : ";
-    s += String(WiFi.RSSI()) + " dBm";
-    s += "<li>ESP ID : ";
-    s += ESP.getChipId();
-    s += "<li>Server : ";
-    s += serverParamValue;
-    s += "<li>Version : ";
-    s += IOTVERSION;
-    s += "</ul>";
-    s += "<button style='margin-top: 10px;' type='button' onclick=\"location.href='/reboot';\" >รีบูทอุปกรณ์</button><br><br>";
-    s += "<a href='config'>configure page แก้ไขข้อมูล wifi และ user</a>";
-    s += "</body></html>\n";
-
-    server.send(200, "text/html", s);
-}
-
-void configSaved()
-{
-    Serial.println("Configuration was updated.");
-}
-
-void wifiConnected()
-{
-
-    Serial.println("WiFi was connected.");
-    MDNS.begin(iotWebConf.getThingName());
-    MDNS.addService("http", "tcp", 80);
-
-    Serial.printf("Ready! Open http://%s.local in your browser\n", String(iotWebConf.getThingName()));
-    if ((String)emailParamValue != "" && (String)passParamValue != "")
-    {
-        Serial.println("login");
-
-        // 2 เริ่มเชื่อมต่อ หลังจากต่อไวไฟได้
-        if ((String)passParamValue != "")
-            iot.begin((String)emailParamValue, (String)passParamValue, (String)serverParamValue);
-        else // ถ้าไม่ได้ตั้งค่า server ให้ใช้ค่า default
-            iot.begin((String)emailParamValue, (String)passParamValue);
-    }
-}
-
-bool formValidator(iotwebconf::WebRequestWrapper *webRequestWrapper)
-{
-    Serial.println("Validating form.");
-    bool valid = true;
-
-    // if (l < 3)
-    // {
-    //   emailParam.errorMessage = "Please provide at least 3 characters for this test!";
-    //   valid = false;
-    // }
-
-    return valid;
-}
-
-void clearEEPROM()
-{
-    EEPROM.begin(512);
-    // write a 0 to all 512 bytes of the EEPROM
-    for (int i = 0; i < 512; i++)
-    {
-        EEPROM.write(i, 0);
-    }
-
-    EEPROM.end();
-    server.send(200, "text/plain", "Clear all data\nrebooting");
-    delay(1000);
-    ESP.restart();
-}
-
-void reboot()
-{
-    server.send(200, "text/plain", "rebooting");
-    delay(1000);
-    ESP.restart();
 }

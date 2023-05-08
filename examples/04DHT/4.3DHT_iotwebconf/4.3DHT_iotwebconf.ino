@@ -114,7 +114,12 @@ void time1sec()
 }
 
 void setup()
-{
+{  
+  digitalWrite(D6,HIGH);
+  digitalWrite(D8,LOW);
+  pinMode(D6,OUTPUT);
+  pinMode(D8,OUTPUT);
+
   Serial.begin(115200);
   dht.begin();
   Wire.begin();

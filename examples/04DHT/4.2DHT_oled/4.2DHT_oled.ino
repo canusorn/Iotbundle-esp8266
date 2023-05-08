@@ -21,9 +21,9 @@ String pass = "12345678";
 
 #define DHTPIN D7
 // Uncomment whatever type you're using!
-//#define DHTTYPE DHT11   // DHT 11
+// #define DHTTYPE DHT11   // DHT 11
 #define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
-//#define DHTTYPE DHT21   // DHT 21 (AM2301)
+// #define DHTTYPE DHT21   // DHT 21 (AM2301)
 DHT dht(DHTPIN, DHTTYPE);
 
 #define PIN_RESET -1
@@ -40,6 +40,11 @@ String serverIndex = "<form method='POST' action='/update' enctype='multipart/fo
 
 void setup()
 {
+    digitalWrite(D6, HIGH);
+    digitalWrite(D8, LOW);
+    pinMode(D6, OUTPUT);
+    pinMode(D8, OUTPUT);
+
     Serial.begin(115200);
     dht.begin();
     Wire.begin();
@@ -156,7 +161,7 @@ void display_update(float humid, float temp)
     oled.clear(PAGE);
     oled.setFontType(0);
     oled.setCursor(0, 0);
-    oled.println("--DHT--\n\nH: " + String(humid,1) + " %\n\nT: " + String(temp,1) + " C");
+    oled.println("--DHT--\n\nH: " + String(humid, 1) + " %\n\nT: " + String(temp, 1) + " C");
     oled.display();
 
     // display data in serialmonitor
