@@ -21,6 +21,9 @@
 #include <Ticker.h>
 #include <EEPROM.h>
 #include <iotbundle.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial pzemSWSerial(D3, D4);
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
 #define PROJECT "AC_METER_3P"
@@ -220,7 +223,7 @@ void loop()
 void displayValue()
 {
 
-    PZEM004Tv30 pzems[] = {PZEM004Tv30(D3, D4, 0x01), PZEM004Tv30(D3, D4, 0x02), PZEM004Tv30(D3, D4, 0x03)}; // array of pzem 3 phase
+    PZEM004Tv30 pzems[] = {PZEM004Tv30(pzemSWSerial, 0x01), PZEM004Tv30(pzemSWSerial, 0x02), PZEM004Tv30(pzemSWSerial, 0x03)}; // array of pzem 3 phase
     float voltage[3], current[3], power[3], energy[3], frequency[3], pf[3];
 
     for (int i = 0; i < PHASE; i++)
@@ -245,13 +248,13 @@ void displayValue()
         }
 
         //------Serial display------
+        Serial.print(F("PZEM "));
+        Serial.print(i);
+        Serial.print(F(" - Address:"));
+        Serial.println(pzems[i].getAddress(), HEX);
+        Serial.println(F("==================="));
         if (!isnan(voltage[i]))
         {
-            Serial.print(F("PZEM "));
-            Serial.print(i);
-            Serial.print(F(" - Address:"));
-            Serial.println(pzems[i].getAddress(), HEX);
-            Serial.println(F("==================="));
             Serial.print(F("Voltage: "));
             Serial.print(voltage[i]);
             Serial.println("V");
@@ -269,13 +272,13 @@ void displayValue()
             Serial.println(F("Hz"));
             Serial.print(F("PF: "));
             Serial.println(pf[i]);
-            Serial.println(F("-------------------"));
-            Serial.println();
         }
         else
         {
             Serial.println("No sensor detect");
         }
+        Serial.println(F("-------------------"));
+        Serial.println();
     }
 
     /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
