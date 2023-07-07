@@ -358,7 +358,7 @@ void display_update()
   oled.display();
 
   //------print on serial moniter------
-  if (sensordetect)
+  if (sensordetect <= 5)
   {
     Serial.print("PM 1.0 (ug/m3): ");
     Serial.println(data.PM_AE_UG_1_0);
