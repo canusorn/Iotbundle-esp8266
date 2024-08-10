@@ -1,4 +1,14 @@
+/*
+  -PZEM004T-
+  5V - 5V
+  GND - GND
+  D3 - TX
+  D4 - RX
+
+*/
+
 #include <ESP8266WiFi.h>
+#include <PZEM004Tv30.h>
 #include <Wire.h>          // Include Wire if you're using I2C
 #include <SFE_MicroOLED.h> // Include the SFE_MicroOLED library
 #include <ESP8266HTTPClient.h>
@@ -15,7 +25,7 @@
 #include <ModbusMaster.h>
 
 // 1 สร้าง object ชื่อ iot และกำหนดค่า(project)
-#define PROJECT "AC_METER"
+#define PROJECT "AC_METER_3P"
 Iotbundle iot(PROJECT);
 
 // ตั้งค่า pin สำหรับต่อกับ MAX485
@@ -27,7 +37,7 @@ Iotbundle iot(PROJECT);
 #define PIN_RESET -1
 #define DC_JUMPER 0
 
-const char thingName[] = "acmeter";
+const char thingName[] = "acmeter_3p";
 const char wifiInitialApPassword[] = "iotbundle";
 
 #define STRING_LEN 128
@@ -62,10 +72,11 @@ IotWebConfTextParameter emailParam = IotWebConfTextParameter("อีเมลล
 IotWebConfPasswordParameter passParam = IotWebConfPasswordParameter("รหัสผ่าน", "passParam", passParamValue, STRING_LEN);
 IotWebConfTextParameter serverParam = IotWebConfTextParameter("เซิฟเวอร์", "serverParam", serverParamValue, STRING_LEN, "https://iotkiddie.com");
 
+#define PHASE 3
 MicroOLED oled(PIN_RESET, DC_JUMPER); // Example I2C declaration, uncomment if using I2C
 
 unsigned long previousMillis = 0;
-float voltage, current, power, energy, frequency, pf;
+uint8_t phase_display;
 
 uint8_t logo_bmp[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xE0, 0xC0, 0xF0, 0xE0, 0x78, 0x38, 0x78, 0x3C, 0x1C, 0x3C, 0x1C, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1C, 0x3C, 0x1C, 0x3C, 0x78, 0x38, 0xF0, 0xE0, 0xF0, 0xC0, 0xC0, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x01, 0x00, 0x00, 0xF0, 0xF8, 0x70, 0x3C, 0x3C, 0x1C, 0x1E, 0x1E, 0x0E, 0x0E, 0x0E, 0x0F, 0x0F, 0x0E, 0x0E, 0x1E, 0x1E, 0x1E, 0x3C, 0x1C, 0x7C, 0x70, 0xF0, 0x70, 0x20, 0x01, 0x01, 0x03, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x1C, 0x3E, 0x1E, 0x0F, 0x0F, 0x07, 0x87, 0x87, 0x07, 0x0F, 0x0F, 0x1E, 0x3E, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x1F, 0x1F, 0x3F, 0x3F, 0x1F, 0x1F, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -121,7 +132,6 @@ void setup()
     RS485Serial.begin(9600, SWSERIAL_8N1, MAX485_RO, MAX485_DI); // software serial สำหรับติดต่อกับ MAX485
 
     Wire.begin();
-
     // timer interrupt every 1 sec
     timestamp.attach(1, time1sec);
 
@@ -216,14 +226,12 @@ void loop()
     if (currentMillis - previousMillis >= 1000)
     { // run every 1 second
         previousMillis = currentMillis;
-        displayValue(); // update OLED
 
-        /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
-        ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง
-        ถ้าค่าไหนไม่ต้องการส่งค่า ให้กำหนดค่าเป็น NAN
-        เช่น ต้องการส่งแค่ voltage current power
-        iot.update(voltage, current, power, NAN, NAN, NAN);    */
-        iot.update(voltage, current, power, energy, frequency, pf);
+        phase_display++;
+        if (phase_display >= 3)
+            phase_display = 0;
+
+        displayValue(); // update OLED
 
         // check need ota update flag from server
         if (iot.need_ota)
@@ -233,148 +241,167 @@ void loop()
 
 void displayValue()
 {
-    //------read data------
+    float voltage[3], current[3], power[3], energy[3], frequency[3], pf[3];
 
     bool isError = false;
-    float varfloat[7];
     uint8_t result;
     uint32_t tempdouble = 0x00000000;             /* Declare variable "tempdouble" as 32 bits with initial value is 0 */
-    uint32_t var[7];                              /* Declare variable "result" as 8 bits */
-    result = node.readInputRegisters(0x2000, 18); /* read the 9 registers (information) of the PZEM-014 / 016 starting 0x0000 (voltage information) kindly refer to manual)*/
+    result = node.readInputRegisters(0x2000, 39); /* read the 9 registers (information) of the PZEM-014 / 016 starting 0x0000 (voltage information) kindly refer to manual)*/
     if (result == node.ku8MBSuccess)              /* If there is a response */
     {
-
-        tempdouble = (node.getResponseBuffer(0x2000) << 16) + node.getResponseBuffer(0x2001); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[0] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
-
-        tempdouble = (node.getResponseBuffer(0x2002) << 16) + node.getResponseBuffer(0x2003); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[1] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
-
-        tempdouble = (node.getResponseBuffer(0x2004) << 16) + node.getResponseBuffer(0x2005); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[2] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
-
+        // voltage
         tempdouble = (node.getResponseBuffer(0x2006) << 16) + node.getResponseBuffer(0x2007); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[3] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
-
+        voltage[0] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x2008) << 16) + node.getResponseBuffer(0x2009); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        voltage[1] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
         tempdouble = (node.getResponseBuffer(0x200A) << 16) + node.getResponseBuffer(0x200B); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[4] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
+        voltage[2] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
 
+        // current
+        tempdouble = (node.getResponseBuffer(0x200C) << 16) + node.getResponseBuffer(0x200D); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        current[0] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
         tempdouble = (node.getResponseBuffer(0x200E) << 16) + node.getResponseBuffer(0x200F); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[5] = tempdouble;                                                                  /* Divide the value by 10 to get actual power value (as per manual) */
+        current[1] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x2010) << 16) + node.getResponseBuffer(0x2011); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        current[2] = tempdouble;                                                              /* Divide the value by 10 to get actual power value (as per manual) */
 
-        // แสดงค่าที่ได้จากบน Serial monitor
+        // power
+        tempdouble = (node.getResponseBuffer(0x2014) << 16) + node.getResponseBuffer(0x2015); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        power[0] = tempdouble * 1000;                                                         /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x2016) << 16) + node.getResponseBuffer(0x2017); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        power[1] = tempdouble * 1000;                                                         /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x2018) << 16) + node.getResponseBuffer(0x2019); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        power[2] = tempdouble * 1000;                                                         /* Divide the value by 10 to get actual power value (as per manual) */
 
-        varfloat[0] = hexToFloat(var[0]);
-        varfloat[1] = hexToFloat(var[1]);
-        varfloat[2] = hexToFloat(var[2]) * 1000;
-        varfloat[3] = hexToFloat(var[3]) * 1000;
-        varfloat[4] = hexToFloat(var[4]);
-        varfloat[5] = hexToFloat(var[5]);
-        // varfloat[6] = hexToFloat(var[6]);
+        // pf
+        tempdouble = (node.getResponseBuffer(0x202C) << 16) + node.getResponseBuffer(0x202D); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        pf[0] = tempdouble;                                                                   /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x202E) << 16) + node.getResponseBuffer(0x202F); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        pf[1] = tempdouble;                                                                   /* Divide the value by 10 to get actual power value (as per manual) */
+        tempdouble = (node.getResponseBuffer(0x2030) << 16) + node.getResponseBuffer(0x2031); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        pf[2] = tempdouble;
 
-        Serial.println("0x" + String(var[0], HEX) + "\t" + String(varfloat[0], 6) + " v");
-        Serial.println("0x" + String(var[1], HEX) + "\t" + String(varfloat[1], 6) + " a");
-        Serial.println("0x" + String(var[2], HEX) + "\t" + String(varfloat[2], 6) + " w");
-        Serial.println("0x" + String(var[3], HEX) + "\t" + String(varfloat[3], 6) + " var");
-        Serial.println("0x" + String(var[4], HEX) + "\t" + String(varfloat[4], 6) + " pf");
-        Serial.println("0x" + String(var[5], HEX) + "\t" + String(varfloat[5], 6) + " Hz");
+        // freq
+        tempdouble = (node.getResponseBuffer(0x2044) << 16) + node.getResponseBuffer(0x2045); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        frequency[0] = tempdouble;                                                            /* Divide the value by 10 to get actual power value (as per manual) */
+        frequency[1] = tempdouble;
+        frequency[2] = tempdouble;
     }
     else
     {
         isError = true;
         Serial.println("Error 0x2000 reading");
     }
-    result = node.readInputRegisters(0x4000, 2);
+    result = node.readInputRegisters(0x401E, 2);
     if (result == node.ku8MBSuccess) /* If there is a response */
     {
-        tempdouble = (node.getResponseBuffer(0x4000) << 16) + node.getResponseBuffer(0x4001); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
-        var[6] = tempdouble;
-
-        varfloat[6] = hexToFloat(var[6]);
-
-        Serial.println("0x" + String(var[6], HEX) + "\t" + String(varfloat[6], 6) + " kWh");
-        Serial.println("------------");
+        // ImpEp
+        tempdouble = (node.getResponseBuffer(0x401E) << 16) + node.getResponseBuffer(0x401F); /* get the power value. Power value is consists of 2 parts (2 digits of 16 bits in front and 2 digits of 16 bits at the back) and combine them to an unsigned 32bit */
+        energy[0] = tempdouble;                                                               /* Divide the value by 10 to get actual power value (as per manual) */
+        energy[1] = tempdouble;
+        energy[2] = tempdouble;
     }
     else
     {
         isError = true;
         Serial.println("Error 0x4000 reading");
     }
-    if (!isError)
+    
+
+    for (int i = 0; i < PHASE; i++)
     {
-        voltage = varfloat[0];
-        current = varfloat[1];
-        power = varfloat[2];
-        energy = varfloat[6];
-        frequency = varfloat[5];
-        pf = varfloat[4];
-    }
-    else
-    {
-        voltage = NAN;
-        current = NAN;
-        power = NAN;
-        energy = NAN;
-        frequency = NAN;
-        pf = NAN;
+        //------Serial display------
+        Serial.print(F("Phase "));
+        Serial.print(i);
+        Serial.println(F("==================="));
+        if (!isError)
+        {
+            Serial.print(F("Voltage: "));
+            Serial.print(voltage[i]);
+            Serial.println("V");
+            Serial.print(F("Current: "));
+            Serial.print(current[i]);
+            Serial.println(F("A"));
+            Serial.print(F("Power: "));
+            Serial.print(power[i]);
+            Serial.println(F("W"));
+            Serial.print(F("Energy: "));
+            Serial.print(energy[i], 3);
+            Serial.println(F("kWh"));
+            Serial.print(F("Frequency: "));
+            Serial.print(frequency[i], 1);
+            Serial.println(F("Hz"));
+            Serial.print(F("PF: "));
+            Serial.println(pf[i]);
+        }
+        else
+        {
+            Serial.println("No sensor detect");
+        }
+        Serial.println(F("-------------------"));
+        Serial.println();
     }
 
     //------Update OLED display------
     oled.clear(PAGE);
     oled.setFontType(0);
 
+    oled.setCursor(0, 0);
+    oled.println("Phase " + String(phase_display + 1));
+
     // display voltage
-    oled.setCursor(3, 0);
-    oled.print(voltage, 1);
-    oled.setCursor(42, 0);
+    oled.setCursor(3, 12);
+    oled.print(voltage[phase_display], 1);
+    oled.setCursor(42, 12);
     oled.println("V");
 
     // display current
-    if (current < 10)
-        oled.setCursor(9, 12);
+    if (current[phase_display] < 10)
+        oled.setCursor(9, 21);
     else
-        oled.setCursor(3, 12);
-    oled.print(current, 2);
-    oled.setCursor(42, 12);
+        oled.setCursor(3, 21);
+    oled.print(current[phase_display], 2);
+    oled.setCursor(42, 21);
     oled.println("A");
 
     // display power
-    if (power < 10)
-        oled.setCursor(26, 24);
-    else if (power < 100)
-        oled.setCursor(20, 24);
-    else if (power < 1000)
-        oled.setCursor(14, 24);
-    else if (power < 10000)
-        oled.setCursor(8, 24);
+    if (power[phase_display] < 10)
+        oled.setCursor(26, 30);
+    else if (power[phase_display] < 100)
+        oled.setCursor(20, 30);
+    else if (power[phase_display] < 1000)
+        oled.setCursor(14, 30);
+    else if (power[phase_display] < 10000)
+        oled.setCursor(8, 30);
     else
-        oled.setCursor(2, 24);
-    oled.print(power, 0);
-    oled.setCursor(42, 24);
+        oled.setCursor(2, 30);
+    oled.print(power[phase_display], 0);
+    oled.setCursor(42, 30);
     oled.println("W");
 
     // display energy
-    oled.setCursor(3, 36);
-    if (energy < 10)
-        oled.print(energy, 3);
-    else if (energy < 100)
-        oled.print(energy, 2);
-    else if (energy < 1000)
-        oled.print(energy, 1);
+    oled.setCursor(3, 40);
+    if (energy[phase_display] < 10)
+        oled.print(energy[phase_display], 3);
+    else if (energy[phase_display] < 100)
+        oled.print(energy[phase_display], 2);
+    else if (energy[phase_display] < 1000)
+        oled.print(energy[phase_display], 1);
     else
     {
-        oled.setCursor(8, 36);
-        oled.print(energy, 0);
+        oled.setCursor(8, 40);
+        oled.print(energy[phase_display], 0);
     }
-    oled.setCursor(42, 36);
+    oled.setCursor(42, 40);
     oled.println("kWh");
 
     // on error
-    if (isnan(voltage))
+    if (isError)
     {
         oled.clear(PAGE);
         oled.setCursor(0, 0);
-        oled.printf("-Sensor-\n\nno sensor\ndetect!");
+        oled.println("Phase " + String(phase_display + 1));
+        oled.printf("\nno sensor\ndetect!");
     }
 
     // display status
@@ -485,31 +512,15 @@ void displayValue()
 
     oled.display();
 
-    //------Serial display------
-    if (!isnan(voltage))
+    if (isError)
     {
-        Serial.print("Voltage: ");
-        Serial.print(voltage);
-        Serial.println("V");
-        Serial.print("Current: ");
-        Serial.print(current);
-        Serial.println("A");
-        Serial.print("Power: ");
-        Serial.print(power);
-        Serial.println("W");
-        Serial.print("Energy: ");
-        Serial.print(energy, 3);
-        Serial.println("kWh");
-        Serial.print("Frequency: ");
-        Serial.print(frequency, 1);
-        Serial.println("Hz");
-        Serial.print("PF: ");
-        Serial.println(pf);
+        return;
     }
-    else
-    {
-        Serial.println("No sensor detect");
-    }
+    
+
+    /*  4 เมื่อได้ค่าใหม่ ให้อัพเดทตามลำดับตามตัวอย่าง
+    ตัวไลบรารี่รวบรวมและหาค่าเฉลี่ยส่งขึ้นเว็บให้เอง*/
+    iot.update(voltage, current, power, energy, frequency, pf);
 }
 
 void handleRoot()
